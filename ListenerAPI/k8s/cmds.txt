@@ -1,0 +1,65 @@
+﻿# Commands
+
+
+## Build image
+cd ..
+docker build -t listenerapi:dev -f Dockerfile .
+cd k8s
+
+## Test image locally
+docker run -d --name listener -p 62622:8080 listenerapi:dev
+http://localhost:62621/swagger/index.html
+
+http://localhost:62622/api/namespaces
+
+
+## Push image to ACR
+
+$ACR=""
+$AKS_NAME=""
+$AKS_RG=""
+$ACR_ID=""
+
+az acr login --name $ACR
+docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
+docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
+
+az aks update -n $AKS_NAME -g $AKS_RG --attach-acr $ACR_ID
+
+## Create Namespace
+kubetcl apply -f bases-jet-ns.yaml
+
+## Create Deployment
+kubetcl apply -f bases-jet-dep.yaml
+
+## Create Service
+kubetcl apply -f bases-jet-svc.yaml
+
+## Try API at:
+http://localhost:5019/swagger/index.html
+
+http://172.175.233.74/swagger/index.html
+
+http://172.175.233.74/api/namespaces
+http://172.175.233.74/api/pods
+
+## Update script:
+az acr login --name $ACR
+cd ..
+docker build -t listenerapi:dev -f Dockerfile .
+cd k8s
+docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
+docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
+kubectl delete pod listener-dep-.....
+
+
+## Error:
+k8s.Autorest.HttpOperationException: Operation returned an invalid status code 'Forbidden', response body {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"namespaces is forbidden: User \"system:serviceaccount:bases-jet:default\" cannot list resource \"namespaces\" in API group \"\" at the cluster scope: Azure does not have opinion for this user.","reason":"Forbidden","details":{"kind":"namespaces"},"code":403}
+
+# Fix with a clusterRole and a clusterRoleBinding to list pods and namespaces
+kubectl apply -f bases-jet-clusterRole.yaml  
+kubectl apply -f bases-jet-clusterRoleBinding.yaml  
+
+# Fix with Role and RoleBinding to administer jobs in the namespace
+kubectl apply -f bases-jet-Role.yaml
+kubectl apply -f bases-jet-RoleBinding.yaml  

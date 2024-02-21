@@ -636,3 +636,4 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode,csharp
 
+ListenerAPI/k8s/cmds.txt

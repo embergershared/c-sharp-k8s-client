@@ -10,6 +10,6 @@ namespace ListenerAPI.Interfaces
 
         Task<List<string>> GetPodsAsync();
 
-        Task CreateJob(string jobName, string namespaceName);
+        Task CreateJobAsync(string jobName, string namespaceName);
     }
 }

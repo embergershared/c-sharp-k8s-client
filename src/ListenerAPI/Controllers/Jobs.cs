@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ListenerAPI.Constants;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +37,7 @@ namespace ListenerAPI.Controllers
 
             try
             {
-                await _k8SClient.CreateJob(value, "bases-jet");
+                await _k8SClient.CreateJobAsync(value, Const.K8SNsName);
                 //return StatusCode(StatusCodes.Status201Created, "Job created");
                 return CreatedAtAction(nameof(Put), value);
             }

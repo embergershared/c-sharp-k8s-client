@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using ListenerAPI.Constants;
 using ListenerAPI.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -89,7 +90,7 @@ namespace ListenerAPI.Classes
             }
         }
 
-        public async Task CreateJob(string jobName, string namespaceName = "default")
+        public async Task CreateJobAsync(string jobName, string namespaceName = "default")
         {
             var job = new V1Job()
             {
@@ -97,7 +98,7 @@ namespace ListenerAPI.Classes
                 Kind = "Job",
                 Metadata = new V1ObjectMeta()
                 {
-                    Name = jobName
+                    Name = Const.JobsPrefix + jobName
                 },
                 Spec = new V1JobSpec()
                 {

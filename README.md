@@ -16,8 +16,8 @@ The code and images are organized in this manner:
 
 Role | Application Name | [.NET Project template](https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview) | Visual Studio Project | Docker Image Name
 ---------|----------|---------|---------|---------
- WebAPI Listener | `ListenerAPI` | `ASP.NET Core Web API` | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
- Job Worker | `Job` | `Worker Service` | `src/Job/Job.csproj` | `jobworker:dev`
+ WebAPI Listener | `ListenerAPI` | ASP.NET Core Web API | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
+ Job Worker | `Job` | Worker Service | `src/Job/Job.csproj` | `jobworker:dev`
 
 ## Links
 

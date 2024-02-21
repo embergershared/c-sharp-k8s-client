@@ -63,4 +63,5 @@ az acr login --name $ACR
 docker build -t listenerapi:dev -f Dockerfile .
 docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
 docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
+kubectl delete pod/listener-dep-***-***
 ```

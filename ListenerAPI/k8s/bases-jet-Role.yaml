@@ -1,0 +1,9 @@
+﻿apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bases-jet-jobs-role
+  namespace: bases-jet
+rules:
+ - apiGroups: ["batch"]
+   resources: ["jobs"]
+   verbs: ["list", "get", "watch", "create", "update", "patch", "delete"]

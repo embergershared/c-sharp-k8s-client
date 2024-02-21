@@ -1,0 +1,21 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: listener-dep
+  namespace: bases-jet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bases-jet-listener
+  template:
+    metadata:
+      labels:
+        app: bases-jet-listener
+    spec:
+      containers:
+      - name: listener
+        image: acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/listenerapi:dev
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

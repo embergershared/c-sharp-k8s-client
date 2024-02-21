@@ -1,0 +1,23 @@
+﻿apiVersion: batch/v1
+kind: Job
+metadata:
+  name: example-job
+  namespace: bases-jet
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: example
+        image: example:1.0
+        imagePullPolicy: Always # available options: Always, IfNotPresent
+        env:
+        - name: NAMESPACE
+          value: "default"  # change to match the namespace of your objects e.g. kube-system, if empty, "default" is used
+        resources:
+          limits:
+            cpu: "0.2"
+            memory: "200Mi"
+          requests:
+            cpu: "0.1"
+            memory: "100Mi"

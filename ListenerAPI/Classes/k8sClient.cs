@@ -89,7 +89,7 @@ namespace ListenerAPI.Classes
             }
         }
 
-        public async Task CreateJob(string jobName, string namespaceName = "bases-jet")
+        public async Task CreateJob(string jobName, string namespaceName = "default")
         {
             var job = new V1Job()
             {
@@ -146,7 +146,7 @@ namespace ListenerAPI.Classes
             {
                 if (_k8SClient != null)
                 {
-                    await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, "bases-jet");
+                    await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, namespaceName);
                 }
             }
             catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)

@@ -36,7 +36,7 @@ namespace ListenerAPI.Controllers
 
             try
             {
-                await _k8SClient.CreateJob(value, "default");
+                await _k8SClient.CreateJob(value, "bases-jet");
                 //return StatusCode(StatusCodes.Status201Created, "Job created");
                 return CreatedAtAction(nameof(Put), value);
             }

@@ -17,7 +17,7 @@ The code and images are organized in this manner:
 Role | Application Name | Template | Visual Studio Project | Image Name
 ---------|----------|---------|---------|---------
  WebAPI Listener | `ListenerAPI` | ASP.NET Core Web API (`Microsoft.NET.Sdk.Web`) | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
- Job Worker | `Job` | Worker Service (`Microsoft.NET.Sdk.Worker`) | `src/Job/Job.csproj` | `jobruntime:dev`
+ Job Worker | `Job` | Worker Service (`Microsoft.NET.Sdk.Worker`) | `src/Job/Job.csproj` | `jobworker:dev`
 
 ## Links
 

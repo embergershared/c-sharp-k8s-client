@@ -110,18 +110,8 @@ namespace ListenerAPI.Classes
                             {
                                 new V1Container()
                                 {
-                                    Name = "pi",
-                                    Image = "perl",
-                                    Command = new List<string>()
-                                    {
-                                        "perl"
-                                    },
-                                    Args = new List<string>()
-                                    {
-                                        "-Mbignum=bpi",
-                                        "-wle",
-                                        "print bpi(2000)"
-                                    },
+                                    Name = "jet-worker",
+                                    Image = "acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/jobworker:dev",
                                     Env = new List<V1EnvVar>()
                                     {
                                         new()
@@ -131,8 +121,8 @@ namespace ListenerAPI.Classes
                                         },
                                         new()
                                         {
-                                            Name = "INPUT",
-                                            Value = Guid.NewGuid().ToString()
+                                            Name = "ITERATIONS",
+                                            Value = "12"
                                         }
                                     }
                                 }

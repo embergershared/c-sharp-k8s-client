@@ -37,7 +37,7 @@ namespace Job
         {
             _logger.LogTrace("Starting async Task DoIterationsAsync() at: {time}", DateTimeOffset.Now);
 
-            var iterations = _configuration.GetValue<int>("Iterations");
+            var iterations = _configuration.GetValue<int>("ITERATIONS");
             _logger.LogDebug("Starting Worker run for {iterations} iterations at: {time}", iterations, DateTimeOffset.Now);
 
             var i = 0;

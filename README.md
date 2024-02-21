@@ -19,6 +19,12 @@ Role | Application Name | [.NET template](https://learn.microsoft.com/en-us/dotn
  WebAPI Listener | `ListenerAPI` | ASP.NET Core Web API | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
  Job Worker | `Job` | Worker Service | `src/Job/Job.csproj` | `jobworker:dev`
 
+## Figure
+
+The process can be represented with this UML Sequence diagram:
+
+![UML sequence](img/POC_UML.jpg)
+
 ## Links
 
 Description | Link

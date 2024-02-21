@@ -1,13 +1,20 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.Threading.Tasks;
+
 
 namespace Job
 {
     internal class Program
     {
-        static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var builder = Host.CreateApplicationBuilder(args);
+            builder.Services.AddHostedService<Worker>();
+
+            var host = builder.Build();
+
+            await host.RunAsync();
         }
     }
 }

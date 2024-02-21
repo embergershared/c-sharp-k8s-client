@@ -14,10 +14,10 @@ The jobs are created using the image `jobruntime` to perform few tasks, then com
 
 The code and images are organized in this manner:
 
-Role | Application Name | Visual Studio Project | Image Name
----------|----------|---------|---------
- WebAPI Listener | ListenerAPI | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
- Job Runner | Job | `src/Job/Job.csproj` | `jobruntime:dev`
+Role | Application Name | Template | Visual Studio Project | Image Name
+---------|----------|---------|---------|---------
+ WebAPI Listener | `ListenerAPI` | ASP.NET Core Web API (`Microsoft.NET.Sdk.Web`) | `src/ListenerAPI/ListenerAPI.csproj` | `listenerapi:dev`
+ Job Worker | `Job` | Worker Service (`Microsoft.NET.Sdk.Worker`) | `src/Job/Job.csproj` | `jobruntime:dev`
 
 ## Links
 

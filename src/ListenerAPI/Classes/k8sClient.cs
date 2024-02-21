@@ -107,28 +107,32 @@ namespace ListenerAPI.Classes
             Spec = new V1PodSpec()
             {
               Containers = new List<V1Container>()
-                            {
-                                new V1Container()
-                                {
-                                    Name = "jet-worker",
-                                    Image = "acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/jobworker:dev",
-                                    Env = new List<V1EnvVar>()
-                                    {
-                                        new()
-                                        {
-                                            Name = "JOB_NAME",
-                                            Value = jobName
-                                        },
-                                        new()
-                                        {
-                                            Name = "ITERATIONS",
-                                            Value = "12"
-                                        }
-                                    },
-                                    ImagePullPolicy = "Always", // Can also be "IfNotPresent" or "Never"  
-                                }
-                            },
+              {
+                new V1Container()
+                {
+                  Name = "jet-worker",
+                  Image = "acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/jobworker:dev",
+                  Env = new List<V1EnvVar>()
+                  {
+                    new()
+                    {
+                      Name = "JOB_NAME",
+                      Value = jobName
+                    },
+                    new()
+                    {
+                      Name = "ITERATIONS",
+                      Value = "12"
+                    }
+                  },
+                  ImagePullPolicy = "Always"
+                }
+              },
               RestartPolicy = "Never",
+              NodeSelector = new Dictionary<string, string>
+              {
+                { "kubernetes.azure.com/agentpool", "jobs" }
+              }
             }
           }
         }

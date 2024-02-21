@@ -41,3 +41,25 @@ docker build -t jobworker:dev -f Dockerfile .
 docker tag jobworker:dev "$ACR.azurecr.io/bases-jet/jobworker:dev"
 docker push "$ACR.azurecr.io/bases-jet/jobworker:dev"
 ```
+
+## Create a dedicated Node pool for jobs
+
+```powershell
+$AKS_NAME=""
+$AKS_RG=""
+$VNET_ID=""
+$NODES_SNET_ID="${VNET_ID}/subnets/aks-jobspool-snet"
+$PODS_SNET_ID="${VNET_ID}/subnets/aks-pod-snet"
+
+az aks nodepool add -g $AKS_RG -n jobs --cluster-name $AKS_NAME -k 1.27.7 --mode User -c 2 -s Standard_B2s --pod-subnet-id $PODS_SNET_ID --vnet-subnet-id $NODES_SNET_ID
+```
+
+It creates an Node pool with nodes getting the agentpool name as a label (`kubernetes.azure.com/agentpool:jobs`)
+We can then use it for the Node selector:
+
+```yaml
+spec:
+  containers:
+  nodeSelector:
+    kubernetes.azure.com/agentpool: jobs
+```

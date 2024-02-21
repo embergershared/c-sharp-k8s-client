@@ -1,4 +1,4 @@
-﻿# **ListenerAPI** Visual Studio 2022 Project
+﻿# `ListenerAPI` Visual Studio 2022 Project
 
 ## Overview
 
@@ -8,7 +8,6 @@
 1. Build and push the application image to an ACR
 
 ```powershell
-cd ListenerAPI/
 az acr login --name $ACR
 docker build -t listenerapi:dev -f Dockerfile .
 docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
@@ -60,7 +59,6 @@ kubectl apply -f k8s/bases-jet-RoleBinding.yaml
 ## Update/Push image to Container Registry
 
 ```powershell
-cd ListenerAPI/
 az acr login --name $ACR
 docker build -t listenerapi:dev -f Dockerfile .
 docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"

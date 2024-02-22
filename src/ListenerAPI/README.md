@@ -63,6 +63,6 @@ az acr login --name $ACR
 docker build -t listenerapi:dev -f Dockerfile .
 docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
 docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
-# Pods deletion forces a recreation, that will pull the latest image (based on its digest) as we have a 'spec.template.spec.containers.imagePullPolicy: Always' parameter.
+# The pod deletion forces a recreation, that will pull the latest image (based on its digest) as we have a 'spec.template.spec.containers.imagePullPolicy: Always' parameter.
 kubectl delete pod/listener-dep-***-***
 ```

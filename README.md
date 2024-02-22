@@ -1,4 +1,4 @@
-# Kubernetes C# client example
+# Kubernetes C# client example used within the AKS cluster
 
 ## Overview
 

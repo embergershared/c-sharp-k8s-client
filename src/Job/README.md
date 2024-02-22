@@ -3,12 +3,12 @@
 ## Overview
 
 This Visual Studio project is a .NET Core `Worker Service`.
-It launches an Asynchronous process that logs a message every second, then exits and stops the worker.
-The number of iterations is set by an Environment variable `ITERATIONS`.
+It creates a worked that launches an Asynchronous process. This process logs a message every second (`Information` level), which exits after `X` iterations and stops the worker, making the pod terminating.
+The number of iterations `X` is set by the Environment variable `ITERATIONS`'s value.
 
-This image is used in the job definition the `ListenerAPI` uses to create the job (in `src\ListenerAPI\Classes\k8sClient.cs` / `CreateJobAsync()`). In this class, the number of iterations is set to `12`. This can be extended to become an argument from the trigger, and actually many to set the worker's instance details.
+This image is used in the job definition the `ListenerAPI` creates for the job (in `src\ListenerAPI\Classes\k8sClient.cs` / `CreateJobAsync()`). This can be extended to become an argument from the trigger payload, to become an entire `JSON` that will define the exact parameters of the job's run.
 
-The outputs of the job can be seen with `kubectl logs pod/<name of the pod>`:
+The outputs of the job can be seen with `kubectl logs pod/<name of the pod>`, and here is an example:
 
 ```log
 info: Job.Worker[0]
@@ -42,7 +42,9 @@ docker tag jobworker:dev "$ACR.azurecr.io/bases-jet/jobworker:dev"
 docker push "$ACR.azurecr.io/bases-jet/jobworker:dev"
 ```
 
-## Create a dedicated Node pool for jobs
+> Note: because the job created by the `ListenerAPI` has an `ImagePullPolicy: Always` spec, each jon run will update to the latest `dev` tag available in the Container Registry.
+
+## Create and use a dedicated Node pool for jobs
 
 ```powershell
 $AKS_NAME=""

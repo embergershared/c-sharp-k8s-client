@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListenerAPI", "ListenerAPI\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Job", "Job\Job.csproj", "{A07EC7AA-92E3-4BE4-80D6-A3635750915C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkerJob", "WorkerJob\WorkerJob.csproj", "{0644E02B-E92B-400F-88DF-A7663C6DB68A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{A07EC7AA-92E3-4BE4-80D6-A3635750915C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A07EC7AA-92E3-4BE4-80D6-A3635750915C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A07EC7AA-92E3-4BE4-80D6-A3635750915C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0644E02B-E92B-400F-88DF-A7663C6DB68A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0644E02B-E92B-400F-88DF-A7663C6DB68A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0644E02B-E92B-400F-88DF-A7663C6DB68A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0644E02B-E92B-400F-88DF-A7663C6DB68A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

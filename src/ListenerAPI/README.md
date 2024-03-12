@@ -23,7 +23,8 @@ helm install listener ./helm-chart --namespace bases-jet --create-namespace
 
 3. Use the WebAPI
 
-`$IPPort=""`
+`$IPPort=$(kubectl get service/listener-svc -n bases-jet -o jsonpath='{.status.loadBalancer.ingress[0].ip}')`
+
 
 - With Swagger Web UI: `http://$IPPort/swagger/index.html`
 

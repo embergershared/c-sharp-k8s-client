@@ -1,8 +1,8 @@
 ﻿apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: bases-jet-jobs-role
-  namespace: bases-jet
+  name: {{ .Values.baseName }}-jobs-role
+  namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups: ["batch"]
   resources: ["jobs"]

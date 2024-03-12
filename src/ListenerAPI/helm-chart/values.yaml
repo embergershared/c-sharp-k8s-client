@@ -1,0 +1,16 @@
+# Default values for listener.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+baseName: "bases-jet"
+replicaCount: 1
+
+image:
+  repository: acruse2446692s1hubsharedsvc.azurecr.io
+  name: bases-jet/listenerapi
+  tag: dev
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080

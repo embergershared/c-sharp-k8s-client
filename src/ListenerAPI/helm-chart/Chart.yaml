@@ -1,0 +1,9 @@
+apiVersion: v2
+name: listener
+description: A Helm chart to deploy the Listener API on an AKS cluster
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Emmanuel Bergerat
+    email: emberger@microsoft.com

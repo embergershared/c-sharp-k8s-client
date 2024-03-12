@@ -1,0 +1,18 @@
+1. Get the Service External-IP by executing:
+IP=$(kubectl get service/{{ include "listener.fullname" . }}-svc -n {{ .Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+2. Call the Swagger UI:
+- With Swagger Web UI: `http://$IP/swagger/index.html`
+echo http://$IP/swagger/index.html
+
+- with browser:
+  - List namespaces: `http://$IP/api/namespaces`
+  - List pods: `http://$IP/api/pods`
+  - Create a job:
+
+  ```bash
+  curl -X 'POST' \
+  '<http://$IP/api/Jobs>' \
+  -H 'Content-Type: application/json' \
+  -d '"docjob"'
+  ```

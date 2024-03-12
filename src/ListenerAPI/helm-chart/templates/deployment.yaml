@@ -1,0 +1,21 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "listener.fullname" . }}-dep
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "listener.fullname" . }}-listener
+  template:
+    metadata:
+      labels:
+        app: {{ include "listener.fullname" . }}-listener
+    spec:
+      containers:
+      - name: listener
+        image: {{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}

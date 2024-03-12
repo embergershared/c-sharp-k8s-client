@@ -2,7 +2,6 @@
 
 ## Overview
 
-
 ## Deploy the Listener
 
 1. Build and push the application image to an ACR
@@ -18,27 +17,11 @@ docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
 
 ```powershell
 az aks update -n $AKS_NAME -g $AKS_RG --attach-acr $ACR_ID
-## Create Namespace
-kubetcl apply -f k8s/bases-jet-ns.yaml
-## Create Deployment
-kubetcl apply -f k8s/bases-jet-dep.yaml
-## Create Service
-kubetcl apply -f k8s/bases-jet-svc.yaml
+# Install the listener helm chart:
+helm install listener ./helm-chart --namespace bases-jet --create-namespace
 ```
 
-3. Create permissions for the Listener in the AKS cluster
-
-```powershell
-# To list pods and namespaces (used by api/namespaces & api/pods)
-kubectl apply -f k8s/bases-jet-clusterRole.yaml
-kubectl apply -f k8s/bases-jet-clusterRoleBinding.yaml
-
-# To administer jobs in the namespace (used by api/jobs)
-kubectl apply -f k8s/bases-jet-Role.yaml
-kubectl apply -f k8s/bases-jet-RoleBinding.yaml
-```
-
-4. Use the WebAPI
+3. Use the WebAPI
 
 `$IPPort=""`
 
@@ -63,6 +46,22 @@ az acr login --name $ACR
 docker build -t listenerapi:dev -f Dockerfile .
 docker tag listenerapi:dev "$ACR.azurecr.io/bases-jet/listenerapi:dev"
 docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
-# The pod deletion forces a recreation, that will pull the latest image (based on its ACR digest) as we have a 'spec.template.spec.containers.imagePullPolicy: Always' parameter in place.
-kubectl delete pod/listener-dep-***-***
+# The pod deletion forces its re-creation, with the latest image (based on its ACR digest)
+# as we have a 'spec.template.spec.containers.imagePullPolicy: Always' parameter in place.
+$podNames = kubectl get pod -n bases-jet -o jsonpath='{.items[*].metadata.name}'
+$array = $podNames -split ' ' | Where-Object { $_ -like "listener-dep*" }
+$array | %{kubectl delete pod $_}
+```
+
+## Update the Helm chart
+
+```powershell
+helm upgrade listener ./helm-chart
+```
+
+## Remove all
+
+```powershell
+helm uninstall listener
+kubectl delete ns bases-jet
 ```

@@ -1,7 +1,7 @@
 ﻿apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .Values.baseName }}-jobs-role
+  name: {{ include "listener.fullname" . }}-jobs-role
   namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups: ["batch"]

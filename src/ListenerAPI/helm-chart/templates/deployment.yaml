@@ -1,17 +1,17 @@
 ﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.baseName }}-dep
+  name: {{ include "listener.fullname" . }}-dep
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.baseName }}-listener
+      app: {{ include "listener.fullname" . }}-listener
   template:
     metadata:
       labels:
-        app: {{ .Values.baseName }}-listener
+        app: {{ include "listener.fullname" . }}-listener
     spec:
       containers:
       - name: listener

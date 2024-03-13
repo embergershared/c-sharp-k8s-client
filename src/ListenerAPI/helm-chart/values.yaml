@@ -4,11 +4,16 @@
 
 replicaCount: 1
 image:
-  repository: acruse2446692s1hubsharedsvc.azurecr.io
   name: bases-jet/listenerapi
   tag: dev
+#  repository:
 
 service:
   type: LoadBalancer
   port: 80
   targetPort: 8080
+
+# azureFile:
+#   storageAccountName:
+#   storageAccountKey:
+#   shareName:

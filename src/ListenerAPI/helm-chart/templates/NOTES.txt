@@ -5,14 +5,11 @@ IP=$(kubectl get service/{{ include "listener.fullname" . }}-svc -n {{ .Release.
 - With Swagger Web UI: `http://$IP/swagger/index.html`
 echo http://$IP/swagger/index.html
 
-- with browser:
-  - List namespaces: `http://$IP/api/namespaces`
-  - List pods: `http://$IP/api/pods`
-  - Create a job:
-
-  ```bash
+3. Use HTTP REST with browser:
+- List namespaces: `http://$IP/api/namespaces`
+- List pods: `http://$IP/api/pods`
+- Create a job:
   curl -X 'POST' \
   '<http://$IP/api/Jobs>' \
   -H 'Content-Type: application/json' \
-  -d '"docjob"'
-  ```
+  -d '"job45"'

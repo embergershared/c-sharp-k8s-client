@@ -15,16 +15,33 @@ docker push "$ACR.azurecr.io/bases-jet/listenerapi:dev"
 
 2. Authorize AKS to the ACR and deploy the listener
 
+- Authorize the AKS cluster to pull from the ACR
+
 ```powershell
 az aks update -n $AKS_NAME -g $AKS_RG --attach-acr $ACR_ID
-# Install the listener helm chart:
-helm install listener ./helm-chart --namespace bases-jet --create-namespace
+```
+
+- Create a YAML file, not checked-in, for example `dev-secret.yaml` with:
+
+```yaml
+image:
+  repository: <ACR name>
+
+azureFile:
+  storageAccountName: <Storage Account name>
+  storageAccountKey: <Storage Account Access key>
+  shareName: <Storage Account File share name>
+```
+
+- Install the listener helm chart:
+
+```powershell
+helm install listener ./helm-chart --namespace bases-jet --create-namespace --values ./helm-chart/dev-secret.yaml
 ```
 
 3. Use the WebAPI
 
 `$IPPort=$(kubectl get service/listener-svc -n bases-jet -o jsonpath='{.status.loadBalancer.ingress[0].ip}')`
-
 
 - With Swagger Web UI: `http://$IPPort/swagger/index.html`
 
@@ -39,6 +56,20 @@ helm install listener ./helm-chart --namespace bases-jet --create-namespace
   -H 'Content-Type: application/json' \
   -d '"docjob"'
   ```
+
+4. Browse the mounted file share
+
+Connect in the listener pod:
+
+```powershell
+$podNames = kubectl get pod -n bases-jet -o jsonpath='{.items[*].metadata.name}'
+$array = $podNames -split ' ' | Where-Object { $_ -like "listener-dep*" }
+kubectl exec -it $array -- /bin/bash
+```
+
+Once in the pod, list the file share content:
+
+`ls -l /mnt`
 
 ## Update/Push image to Container Registry
 

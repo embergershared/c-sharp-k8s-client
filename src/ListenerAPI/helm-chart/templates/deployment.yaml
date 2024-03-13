@@ -19,3 +19,15 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: {{ .Values.service.targetPort }}
+        volumeMounts:
+        - name: azure-file
+          mountPath: /mnt/{{ .Values.azureFile.shareName }}
+          readOnly: false
+      volumes:
+        - name: azure-file
+          csi:
+            driver: file.csi.azure.com
+            volumeAttributes:
+              shareName: {{ .Values.azureFile.shareName }}
+              secretName: {{ .Values.azureFile.storageAccountName }}-secret
+              mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30,nosharesock"  # optional

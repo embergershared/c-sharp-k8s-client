@@ -1,4 +1,0 @@
-$ACR="acruse2446692s1hubsharedsvc"
-$AKS_NAME="aks-aks-afd-pls-01"
-$AKS_RG="rg-use2-446692-s4-aks-afd-pls-01"
-$ACR_ID="/subscriptions/33855627-4730-446e-b4c8-9f49bad5f089/resourceGroups/rg-use2-446692-s1-hub-sharedsvc-01/providers/Microsoft.ContainerRegistry/registries/acruse2446692s1hubsharedsvc"

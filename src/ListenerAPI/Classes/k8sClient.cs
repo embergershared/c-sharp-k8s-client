@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
@@ -13,8 +12,6 @@ using Microsoft.Extensions.Logging;
 
 namespace ListenerAPI.Classes
 {
-  using CreateLambda = Func<IKubernetes, IKubernetesObject, string, CancellationToken, Task<IKubernetesObject>>;
-
   public class K8SClient : IK8SClient
   {
     private readonly ILogger<K8SClient> _logger;
@@ -92,13 +89,35 @@ namespace ListenerAPI.Classes
 
     public async Task CreateJobAsync(string jobName, string namespaceName = "default")
     {
+      try
+      {
+        if (_k8SClient != null)
+        {
+          var job = CreateJobDefinition(jobName);
+
+          var httpResponse = await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, namespaceName);
+          _logger.LogDebug($"Response was: {httpResponse.Response}");
+        }
+      }
+      catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
+      {
+        _logger.LogError($"Job already exists");
+      }
+      catch (Exception e)
+      {
+        _logger.LogError($"An error occurred while trying to create resource: {e}");
+      }
+    }
+
+    private V1Job CreateJobDefinition(string jobName)
+    {
       var job = new V1Job()
       {
         ApiVersion = "batch/v1",
         Kind = "Job",
         Metadata = new V1ObjectMeta()
         {
-          Name = Const.JobsPrefix + jobName
+            Name = Const.JobsPrefix + jobName
         },
         Spec = new V1JobSpec()
         {
@@ -131,28 +150,13 @@ namespace ListenerAPI.Classes
               RestartPolicy = "Never",
               NodeSelector = new Dictionary<string, string>
               {
-                { "kubernetes.azure.com/agentpool", "jobs" }
+                  { "kubernetes.azure.com/agentpool", "jobs" }
               }
             }
           }
         }
       };
-
-      try
-      {
-        if (_k8SClient != null)
-        {
-          await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, namespaceName);
-        }
-      }
-      catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
-      {
-        _logger.LogError($"Job already exists");
-      }
-      catch (Exception e)
-      {
-        _logger.LogError($"An error occurred while trying to create resource: {e}");
-      }
+      return job;
     }
   }
 }

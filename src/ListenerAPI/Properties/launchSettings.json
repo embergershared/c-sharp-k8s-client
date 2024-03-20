@@ -38,6 +38,10 @@
       },
       "publishAllPorts": true,
       "useSSL": true
+    },
+    "Bridge to Kubernetes": {
+      "commandName": "AzureDevSpacesLocal",
+      "launchBrowser": true
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

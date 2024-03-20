@@ -25,6 +25,7 @@ namespace ListenerAPI
 
             // Dependency Injection
             builder.Services.AddSingleton<IK8SClient, K8SClient>();
+            builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
             #endregion
 
             #region Building App

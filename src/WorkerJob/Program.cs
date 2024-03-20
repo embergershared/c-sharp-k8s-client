@@ -22,7 +22,7 @@ namespace WorkerJob
                 {
                     consoleFormatterOptions.IncludeScopes = true;
                     consoleFormatterOptions.SingleLine = true;
-                    consoleFormatterOptions.TimestampFormat = "yyy-MM-dd HH:mm:ss.fff ";
+                    consoleFormatterOptions.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
                 });
             });
             #endregion

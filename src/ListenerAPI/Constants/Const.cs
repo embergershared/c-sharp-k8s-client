@@ -1,8 +1,10 @@
 ﻿namespace ListenerAPI.Constants
 {
-    public static class Const
+    internal static class Const
     {
-        public const string JobsPrefix = "jet-jobs-";
-        public const string K8SNsName = "bases-jet";
+        internal const string JobsPrefix = "jet-jobs-";
+        internal const string K8SNsName = "bases-jet";
+        internal const string SbPublicSuffix = "servicebus.windows.net";
+        internal const string SbPrivateSuffix = "privatelink.servicebus.windows.net";
     }
 }

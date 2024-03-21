@@ -8,14 +8,14 @@ using ListenerAPI.Constants;
 
 namespace ListenerAPI.Classes
 {
-  public class ServiceBusClient
+  public class AzSbClient
   {
     // Private members
-    private readonly ILogger<ServiceBusClient> _logger;
+    private readonly ILogger<AzSbClient> _logger;
     private Azure.Messaging.ServiceBus.ServiceBusClient? _sbClient;
 
     // Constructor
-    public ServiceBusClient(ILogger<ServiceBusClient> logger)
+    public AzSbClient(ILogger<AzSbClient> logger)
     {
       _logger = logger;
     }
@@ -23,14 +23,14 @@ namespace ListenerAPI.Classes
     // Interface implementation
     public bool CreateClient(string sbNamespace, string? clientId = null)
     {
-      // Create a ServiceBusClient that will authenticate through Active Directory
+      // Create a AzSbClient that will authenticate through Active Directory
 
-      // Reference for the ServiceBusClient: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet
+      // Reference for the AzSbClient: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet
       // Reference for authentication with Azure.Identity: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet#authenticating-with-azureidentity
 
       // See Client lifetime recommendations for wider use out of this POC: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet#client-lifetime
 
-      _logger.LogInformation("Creating a ServiceBusClient to the namespace: {@sb_ns}, with MI \"{@client_id}\"", sbNamespace, clientId);
+      _logger.LogInformation("Creating a AzSbClient to the namespace: {@sb_ns}, with MI \"{@client_id}\"", sbNamespace, clientId);
       var fullyQualifiedNamespace = $"{sbNamespace}.{Const.SbPublicSuffix}";
 
       // Enforce TLS 1.2 to connect to Service Bus
@@ -51,19 +51,19 @@ namespace ListenerAPI.Classes
           _sbClient = new Azure.Messaging.ServiceBus.ServiceBusClient(fullyQualifiedNamespace, credential);
         }
 
-        _logger.LogInformation($"ServiceBusClient created");
+        _logger.LogInformation($"AzSbClient created");
         return true;
       }
       catch (Exception e)
       {
-        _logger.LogError(e, $"ServiceBusClient creation failed");
+        _logger.LogError(e, $"AzSbClient creation failed");
         return false;
       }
     }
 
     public async Task DisposeClientAsync()
     {
-      _logger.LogDebug("Disposing the ServiceBusClient");
+      _logger.LogDebug("Disposing the AzSbClient");
       if (_sbClient != null)
       {
         await _sbClient.DisposeAsync();
@@ -79,7 +79,7 @@ namespace ListenerAPI.Classes
 
       if (_sbClient == null)
       {
-        _logger.LogError("Cannot send a message when ServiceBusClient is not created");
+        _logger.LogError("Cannot send a message when AzSbClient is not created");
         return false;
       }
 
@@ -113,7 +113,7 @@ namespace ListenerAPI.Classes
       // create a receiver that we can use to receive the message
       if (_sbClient == null)
       {
-        _logger.LogError("Cannot receive a message when ServiceBusClient is not created");
+        _logger.LogError("Cannot receive a message when AzSbClient is not created");
         return null;
       }
 
@@ -159,7 +159,7 @@ namespace ListenerAPI.Classes
       // create a receiver that we can use to receive the message
       if (_sbClient == null)
       {
-        _logger.LogError("Cannot receive a message when ServiceBusClient is not created");
+        _logger.LogError("Cannot receive a message when AzSbClient is not created");
         return false;
       }
 

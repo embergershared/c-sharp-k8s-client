@@ -3,7 +3,7 @@ using Azure.Messaging.ServiceBus;
 
 namespace ListenerAPI.Interfaces
 {
-  internal interface IServiceBusClient
+  internal interface IAzSbClient
   {
     // Service Bus client operations
     bool CreateClient(string sbNamespace, string? clientId = null);

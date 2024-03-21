@@ -26,6 +26,7 @@ namespace ListenerAPI
             // Dependency Injection
             builder.Services.AddSingleton<IK8SClient, K8SClient>();
             builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
+            builder.Services.AddTransient<ISbBatchSender, SbBatchSender>(); // Connects only to send batch messages, then disconnects
             #endregion
 
             #region Building App

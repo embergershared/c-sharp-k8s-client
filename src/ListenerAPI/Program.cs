@@ -1,52 +1,55 @@
+using System;
 using System.Threading.Tasks;
 using ListenerAPI.Classes;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace ListenerAPI
 {
-    public class Program
+  public class Program
+  {
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
-        {
-            #region Initialization
-            var builder = WebApplication.CreateBuilder(args);
-            #endregion
+      #region Initialization
+      var builder = WebApplication.CreateBuilder(args);
+      #endregion
 
-            #region Adding Services
-            // Add ASP.NET Controller
-            builder.Services.AddControllers();
+      #region Adding Services
+      // Add ASP.NET Controller
+      builder.Services.AddControllers();
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+      // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+      builder.Services.AddEndpointsApiExplorer();
+      builder.Services.AddSwaggerGen();
 
-            // Dependency Injection
-            builder.Services.AddSingleton<IK8SClient, K8SClient>();
-            builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
-            builder.Services.AddTransient<ISbBatchSender, SbBatchSender>(); // Connects only to send batch messages, then disconnects
-            #endregion
+      // Dependency Injection
+      builder.Services.AddSingleton<IK8SClient, K8SClient>();
+      builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
 
-            #region Building App
-            var app = builder.Build();
+      builder.Services.AddSingleton<ISbClient, SbClient>(); // 1 per namespace to create 1 AMQP connection. Should be tied to application lifecycle, as per: https://learn.microsoft.com/en-us/dotnet/api/azure.messaging.servicebus.servicebusclient?view=azure-dotnet#remarks
+      builder.Services.AddSingleton<Func<ISbClient>>(x => () => x.GetService<ISbClient>()!); // Factory to generate ISbClient singleton instances per ServiceBus namespaces, if needed
+      builder.Services.AddTransient<ISbSender, SbSender>(); // Connects only to send batch messages, then disconnects
+      #endregion
 
-            // Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            //}
+      #region Building App
+      var app = builder.Build();
 
-            //app.UseHttpsRedirection();
+      // Configure the HTTP request pipeline.
+      //if (app.Environment.IsDevelopment())
+      //{
+      app.UseSwagger();
+      app.UseSwaggerUI();
+      //}
 
-            //app.UseAuthorization();
+      //app.UseHttpsRedirection();
 
-            app.MapControllers();
-            #endregion
+      //app.UseAuthorization();
 
-            await app.RunAsync();
-        }
+      app.MapControllers();
+      #endregion
+
+      await app.RunAsync();
     }
+  }
 }

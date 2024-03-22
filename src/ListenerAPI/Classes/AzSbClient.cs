@@ -12,7 +12,7 @@ namespace ListenerAPI.Classes
   {
     // Private members
     private readonly ILogger<AzSbClient> _logger;
-    private Azure.Messaging.ServiceBus.ServiceBusClient? _sbClient;
+    private ServiceBusClient? _sbClient;
 
     // Constructor
     public AzSbClient(ILogger<AzSbClient> logger)
@@ -41,14 +41,17 @@ namespace ListenerAPI.Classes
         if (string.IsNullOrEmpty(clientId))
         {
           // Code for system-assigned managed identity:
-          _sbClient = new Azure.Messaging.ServiceBus.ServiceBusClient(fullyQualifiedNamespace, new DefaultAzureCredential());
+          _sbClient = new ServiceBusClient(fullyQualifiedNamespace, new DefaultAzureCredential());
         }
         else
         {
           // Code for user-assigned managed identity:
-          var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
-          { ManagedIdentityClientId = clientId });
-          _sbClient = new Azure.Messaging.ServiceBus.ServiceBusClient(fullyQualifiedNamespace, credential);
+          var credential = new DefaultAzureCredential(
+            new DefaultAzureCredentialOptions
+            {
+              ManagedIdentityClientId = clientId
+            });
+          _sbClient = new ServiceBusClient(fullyQualifiedNamespace, credential);
         }
 
         _logger.LogInformation($"AzSbClient created");

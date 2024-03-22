@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListenerAPI", "ListenerAPI\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Job", "Job\Job.csproj", "{A07EC7AA-92E3-4BE4-80D6-A3635750915C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkerJob", "WorkerJob\WorkerJob.csproj", "{0644E02B-E92B-400F-88DF-A7663C6DB68A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkerJob", "WorkerJob\WorkerJob.csproj", "{0644E02B-E92B-400F-88DF-A7663C6DB68A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B303F1DB-ED46-478B-BF22-9DA5EFF23305}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

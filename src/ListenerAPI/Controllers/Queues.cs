@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace ListenerAPI.Controllers
@@ -13,15 +14,21 @@ namespace ListenerAPI.Controllers
   public class Queues : Controller
   {
     private readonly ILogger<Queues> _logger;
-    private readonly ISbBatchSender _sbBatchSender;
+    private readonly ISbSender _sbSender;
+    private readonly Func<ISbClient> _sbClientFactory;
+    private readonly IConfiguration _config;
 
     public Queues(
       ILogger<Queues> logger,
-      ISbBatchSender sbBatchSender
+      IConfiguration config,
+      Func<ISbClient> sbClientFactory,
+      ISbSender sbSender
     )
     {
       _logger = logger;
-      _sbBatchSender = sbBatchSender;
+      _config = config;
+      _sbClientFactory = sbClientFactory;
+      _sbSender = sbSender;
       _logger.LogInformation("Controllers/Queues constructed");
     }
 
@@ -30,7 +37,7 @@ namespace ListenerAPI.Controllers
       _logger.LogInformation("Controllers/Queues disposing");
       if (disposing)
       {
-        //sbBatchSender.DisposeClientAsync();
+        //sbSender.DisposeClientAsync();
       }
       base.Dispose(disposing);
     }
@@ -43,21 +50,37 @@ namespace ListenerAPI.Controllers
 
     public async Task<ActionResult> Put([FromBody] int value)
     {
-      _logger.LogInformation($"HTTP POST /api/Queues called with {value} in body");
+      _logger.LogInformation("HTTP POST /api/Queues called with {value} in body", value);
 
-      try
+      var sbConnString = _config.GetValue<string>("azSbPrimaryConnString");
+      _logger.LogDebug("Found in config: \"azSbPrimaryConnString\": \"{sbConnString}\"", sbConnString);
+
+      var sbQueueSenderName = _config.GetValue<string>("azSbQueueName");
+      _logger.LogDebug("Found in config: \"azSbQueueName\": \"{sbQueueSenderName}\"", sbQueueSenderName);
+
+      if (sbConnString != null && sbQueueSenderName != null)
       {
-        await _sbBatchSender.SendMessagesAsync(value);
-        //return StatusCode(StatusCodes.Status201Created, "Job created");
+        try
+        {
+          {
+            var sbClient = _sbClientFactory().CreateClientCS(sbConnString);
+            if (sbClient != null) await _sbSender.SendMessagesAsync(sbClient, sbQueueSenderName, value);
 
-        return CreatedAtAction(nameof(Put), value);
+            return CreatedAtAction(nameof(Put), value);
+          }
+        }
+        catch (Exception ex)
+        {
+          _logger.LogError("Called failed with exception: {ex}", ex);
+
+          return StatusCode(StatusCodes.Status500InternalServerError,
+            "Error Sending messages");
+        }
       }
-      catch (Exception ex)
+      else
       {
-        _logger.LogError($"Called failed with exception: {ex}");
-
         return StatusCode(StatusCodes.Status500InternalServerError,
-          "Error creating the job");
+          "Missing configuration to send messages");
       }
     }
   }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading.Tasks;
+using ListenerAPI.Factories;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,15 +17,15 @@ namespace ListenerAPI.Controllers
   public class Queues : Controller
   {
     private readonly ILogger<Queues> _logger;
-    private readonly ISbSender _sbSender;
-    private readonly Func<ISbClient> _sbClientFactory;
+    private readonly IAbstractFactory<ISbSender> _sbSender;
+    private readonly IAbstractFactory<ISbClient> _sbClientFactory;
     private readonly IConfiguration _config;
 
     public Queues(
       ILogger<Queues> logger,
       IConfiguration config,
-      Func<ISbClient> sbClientFactory,
-      ISbSender sbSender
+      IAbstractFactory<ISbClient> sbClientFactory,
+      IAbstractFactory<ISbSender> sbSender
     )
     {
       _logger = logger;
@@ -52,19 +55,40 @@ namespace ListenerAPI.Controllers
     {
       _logger.LogInformation("HTTP POST /api/Queues called with {value} in body", value);
 
-      var sbConnString = _config.GetValue<string>("azSbPrimaryConnString");
-      _logger.LogDebug("Found in config: \"azSbPrimaryConnString\": \"{sbConnString}\"", sbConnString);
+      var tasks = new[]
+      {
+        ActionResultAsync(value, "01"),
+        ActionResultAsync(value, "02")
+      };
 
-      var sbQueueSenderName = _config.GetValue<string>("azSbQueueName");
-      _logger.LogDebug("Found in config: \"azSbQueueName\": \"{sbQueueSenderName}\"", sbQueueSenderName);
+      var results = await Task.WhenAll(tasks);
+
+      if (results.All(predicate: x => x is CreatedAtActionResult))
+      {
+        return CreatedAtAction(nameof(Put), value);
+      }
+      else
+      {
+        return StatusCode(StatusCodes.Status500InternalServerError,
+                   "Error Sending messages");
+      }
+    }
+
+    private async Task<ActionResult> ActionResultAsync(int value, string sbNum)
+    {
+      var sbConnString = _config.GetValue<string>($"azSb{sbNum}PrimaryConnString");
+      _logger.LogDebug("Found in config: \"azSb{sbNum}PrimaryConnString\": \"{sbConnString}\"", sbNum, sbConnString);
+
+      var sbQueueSenderName = _config.GetValue<string>($"azSb{sbNum}QueueName");
+      _logger.LogDebug("Found in config: \"azSb{sbNum}QueueName\": \"{sbQueueSenderName}\"", sbNum, sbQueueSenderName);
 
       if (sbConnString != null && sbQueueSenderName != null)
       {
         try
         {
           {
-            var sbClient = _sbClientFactory().CreateClientCS(sbConnString);
-            if (sbClient != null) await _sbSender.SendMessagesAsync(sbClient, sbQueueSenderName, value);
+            var sbClient = _sbClientFactory.Create().CreateClientCS(sbConnString);
+            if (sbClient != null) await _sbSender.Create().SendMessagesAsync(sbClient, sbQueueSenderName, value);
 
             return CreatedAtAction(nameof(Put), value);
           }

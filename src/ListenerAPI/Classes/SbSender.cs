@@ -59,7 +59,7 @@ namespace ListenerAPI.Classes
       {
         // Use the producer client to send the batch of messages to the Service Bus queue
         await _sbSender.SendMessagesAsync(messageBatch);
-        _logger.LogInformation("A batch of {numOfMessages} messages has been published to the queue.", numOfMessages);
+        _logger.LogInformation("A batch of {numOfMessages} messages has been published to the queue {queueName}.", numOfMessages, queueName);
       }
       finally
       {

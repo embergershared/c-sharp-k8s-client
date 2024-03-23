@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using ListenerAPI.Classes;
+using ListenerAPI.Factories;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,9 +28,9 @@ namespace ListenerAPI
       builder.Services.AddSingleton<IK8SClient, K8SClient>();
       builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
 
-      builder.Services.AddSingleton<ISbClient, SbClient>(); // 1 per namespace to create 1 AMQP connection. Should be tied to application lifecycle, as per: https://learn.microsoft.com/en-us/dotnet/api/azure.messaging.servicebus.servicebusclient?view=azure-dotnet#remarks
-      builder.Services.AddSingleton<Func<ISbClient>>(x => () => x.GetService<ISbClient>()!); // Factory to generate ISbClient singleton instances per ServiceBus namespaces, if needed
-      builder.Services.AddTransient<ISbSender, SbSender>(); // Connects only to send batch messages, then disconnects
+      builder.Services.AddSingletonFactory<ISbClient, SbClient>(); // Factory to generate ISbClient singleton instances per ServiceBus namespaces, if needed
+      builder.Services.AddTransientFactory<ISbSender, SbSender>(); // Factory to generate ISbSender transient instances per senders on a namespace queue, that connects only to send batch messages, then disconnects
+
       #endregion
 
       #region Building App

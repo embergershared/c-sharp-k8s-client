@@ -19,13 +19,13 @@ namespace ListenerAPI.Classes
     )
     {
       _logger = logger;
-      _logger.LogInformation("SbClient constructed");
+      _logger.LogDebug("SbClient constructed");
       _clientOptions = GetServiceBusClientOptions();
     }
 
     public ServiceBusClient? CreateClientMI(string sbNamespace, string? clientId = null)
     {
-      _logger.LogInformation("SbClient.CreateClientMIAsync() called");
+      _logger.LogDebug("SbClient.CreateClientMIAsync() called");
 
       // Create an Azure ServiceBusClient that will authenticate through Active Directory
 
@@ -66,7 +66,7 @@ namespace ListenerAPI.Classes
 
     public ServiceBusClient? CreateClientCS(string connString)
     {
-      _logger.LogInformation("SbClient.CreateClientCS() called");
+      _logger.LogDebug("SbClient.CreateClientCS() called");
 
       // Create an Azure ServiceBusClient that will use a connection string
       // Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=connection-string
@@ -99,8 +99,10 @@ namespace ListenerAPI.Classes
       GC.SuppressFinalize(this);
     }
 
-    private static ServiceBusClientOptions GetServiceBusClientOptions()
+    private ServiceBusClientOptions GetServiceBusClientOptions()
     {
+      _logger.LogDebug("SbClient.GetServiceBusClientOptions() called");
+
       // Enforce TLS 1.2 to connect to Service Bus
       System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 

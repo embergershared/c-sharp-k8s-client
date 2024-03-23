@@ -16,21 +16,21 @@ namespace ListenerAPI.Controllers
   public class Queues : Controller
   {
     private readonly ILogger<Queues> _logger;
-    private readonly IAbstractFactory<ISbSender> _sbSender;
-    private readonly IAbstractFactory<ISbClient> _sbClientFactory;
     private readonly IConfiguration _config;
+    private readonly IAbstractFactory<ISbSender> _sbSenderFactory;
+    private readonly IAbstractFactory<ISbClient> _sbClientFactory;
 
     public Queues(
       ILogger<Queues> logger,
       IConfiguration config,
       IAbstractFactory<ISbClient> sbClientFactory,
-      IAbstractFactory<ISbSender> sbSender
+      IAbstractFactory<ISbSender> sbSenderFactory
     )
     {
       _logger = logger;
       _config = config;
       _sbClientFactory = sbClientFactory;
-      _sbSender = sbSender;
+      _sbSenderFactory = sbSenderFactory;
       _logger.LogInformation("Controllers/Queues constructed");
     }
 
@@ -66,44 +66,44 @@ namespace ListenerAPI.Controllers
       {
         return CreatedAtAction(nameof(Put), value);
       }
-      else
-      {
-        return StatusCode(StatusCodes.Status500InternalServerError,
-                   "Error Sending messages");
-      }
+
+      return StatusCode(StatusCodes.Status500InternalServerError,
+        "Error Sending messages");
     }
 
     private async Task<ActionResult> ActionResultAsync(int value, string sbNum)
     {
-      var sbConnString = _config.GetValue<string>($"azSb{sbNum}PrimaryConnString");
-      _logger.LogDebug("Found in config: \"azSb{sbNum}PrimaryConnString\": \"{sbConnString}\"", sbNum, sbConnString);
+      var connStringConfigKey = $"azSb{sbNum}PrimaryConnString";
+      var queueNameConfigKey = $"azSb{sbNum}QueueName";
 
-      var sbQueueSenderName = _config.GetValue<string>($"azSb{sbNum}QueueName");
-      _logger.LogDebug("Found in config: \"azSb{sbNum}QueueName\": \"{sbQueueSenderName}\"", sbNum, sbQueueSenderName);
+      var sbConnString = _config.GetValue<string>(connStringConfigKey);
+      _logger.LogDebug("Found in config: \"{connStringConfigKey}\": \"{sbConnString}\"", connStringConfigKey, sbConnString);
 
-      if (sbConnString != null && sbQueueSenderName != null)
+      var sbQueueSenderName = _config.GetValue<string>(queueNameConfigKey);
+      _logger.LogDebug("Found in config: \"{queueNameConfigKey}\": \"{sbQueueSenderName}\"", queueNameConfigKey, sbQueueSenderName);
+
+      if (sbConnString == null || sbQueueSenderName == null)
       {
-        try
-        {
-          {
-            var sbClient = _sbClientFactory.Create().CreateClientCS(sbConnString);
-            if (sbClient != null) await _sbSender.Create().SendMessagesAsync(sbClient, sbQueueSenderName, value);
-
-            return CreatedAtAction(nameof(Put), value);
-          }
-        }
-        catch (Exception ex)
-        {
-          _logger.LogError("Called failed with exception: {ex}", ex);
-
-          return StatusCode(StatusCodes.Status500InternalServerError,
-            "Error Sending messages");
-        }
-      }
-      else
-      {
+        _logger.LogWarning("Missing configuration values for {connStringConfigKey} / {queueNameConfigKey} to send messages", connStringConfigKey, queueNameConfigKey);
         return StatusCode(StatusCodes.Status500InternalServerError,
           "Missing configuration to send messages");
+      }
+
+      try
+      {
+        {
+          var sbClient = _sbClientFactory.Create().CreateClientCS(sbConnString);
+          if (sbClient != null) await _sbSenderFactory.Create().SendMessagesAsync(sbClient, sbQueueSenderName, value);
+
+          return CreatedAtAction(nameof(Put), value);
+        }
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Called failed with exception: {ex}", ex);
+
+        return StatusCode(StatusCodes.Status500InternalServerError,
+          "Error Sending messages");
       }
     }
   }

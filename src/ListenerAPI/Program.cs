@@ -47,6 +47,7 @@ namespace ListenerAPI
 
       #region Building App
       var app = builder.Build();
+      var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
       // Configure the HTTP request pipeline.
       //if (app.Environment.IsDevelopment())
@@ -62,7 +63,8 @@ namespace ListenerAPI
       app.MapControllers();
       #endregion
 
-      app.Services.GetRequiredService<ILogger<Program>>().LogInformation("ListenerAPI started");
+      logger.LogInformation("ListenerAPI started");
+      
       await app.RunAsync();
     }
   }

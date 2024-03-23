@@ -17,14 +17,14 @@ namespace ListenerAPI.Classes
     )
     {
       _logger = logger;
-      _logger.LogInformation("SbSender constructed");
+      _logger.LogDebug("SbSender constructed");
     }
 
     #region ISbSender implementation
     
     public async Task SendMessagesAsync(ServiceBusClient sbClient, string queueName, int numOfMessages)
     {
-      _logger.LogInformation("SbSender.SendMessagesAsync() called");
+      _logger.LogDebug("SbSender.SendMessagesAsync() called");
 
       if (sbClient == null)
       {
@@ -35,7 +35,7 @@ namespace ListenerAPI.Classes
       try
       {
         _sbSender = sbClient.CreateSender(queueName);
-        _logger.LogInformation("ServiceBusSender created: {@sbs_Id}", _sbSender.Identifier);
+        _logger.LogInformation("ServiceBusSender created: {@sbs_Id}, on ServiceBusClient {@sbc_Id}", _sbSender.Identifier, sbClient.Identifier);
       }
       catch (Exception ex)
       {

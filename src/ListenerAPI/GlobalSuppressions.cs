@@ -5,4 +5,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "<Pending>", Scope = "member", Target = "~M:ListenerAPI.Classes.K8SClient.CreateJobAsync(System.String,System.String)~System.Threading.Tasks.Task")]
+[assembly: SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:ListenerAPI.Classes.K8SClient.CreateJobDefinition(System.String)~k8s.Models.V1Job")]
+[assembly: SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:ListenerAPI.Classes.K8SClient.GetNamespacesAsync~System.Threading.Tasks.Task{System.Collections.Generic.List{System.String}}")]
+[assembly: SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:ListenerAPI.Classes.K8SClient.GetPodsAsync~System.Threading.Tasks.Task{System.Collections.Generic.List{System.String}}")]

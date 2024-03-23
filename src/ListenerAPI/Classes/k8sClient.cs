@@ -30,7 +30,7 @@ namespace ListenerAPI.Classes
     private void CreateClient()
     {
       var kPath = _config.GetValue<string>("kubeconfigPath");
-      _logger.LogInformation($"Found in config: \"kubeconfigPath\": \"{kPath}\"");
+      _logger.LogInformation("Found in config: \"kubeconfigPath\": \"{kPath}\"", kPath);
 
       // Creating the K8S client:
       // Ref: https://github.com/kubernetes-client/csharp#creating-the-client
@@ -47,7 +47,7 @@ namespace ListenerAPI.Classes
       }
       catch (Exception ex)
       {
-        _logger.LogError(ex.ToString());
+        _logger.LogError("K8SClient.CreateClient() threw an exception: {ex}", ex.ToString());
       }
     }
 
@@ -59,8 +59,7 @@ namespace ListenerAPI.Classes
 
         var namespacesList = namespaces.Body.Items.Select(ns => ns.Metadata.Name).ToList();
 
-        _logger.LogInformation($"Returned: " +
-                                string.Join(", ", namespacesList.ToArray()));
+        _logger.LogInformation("K8SClient.GetNamespacesAsync() returned: {@nsList}", string.Join(", ", namespacesList.ToArray()));
         return namespacesList;
       }
       else
@@ -77,8 +76,7 @@ namespace ListenerAPI.Classes
 
         var podsList = pods.Body.Items.Select(p => p.Metadata.Name).ToList();
 
-        _logger.LogInformation($"Returned: " +
-                                string.Join(", ", podsList.ToArray()));
+        _logger.LogInformation("K8SClient.GetPodsAsync() returned: {@podsList}", string.Join(", ", podsList.ToArray()));
         return podsList;
       }
       else
@@ -96,20 +94,20 @@ namespace ListenerAPI.Classes
           var job = CreateJobDefinition(jobName);
 
           var httpResponse = await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, namespaceName);
-          _logger.LogDebug($"Response was: {httpResponse.Response}");
+          _logger.LogDebug("CreateJobAsync() response was: {@response}", httpResponse.Response);
         }
       }
       catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
       {
         _logger.LogError($"Job already exists");
       }
-      catch (Exception e)
+      catch (Exception ex)
       {
-        _logger.LogError($"An error occurred while trying to create resource: {e}");
+        _logger.LogError("K8SClient.CreateJobAsync() threw an exception: {ex}", ex.ToString());
       }
     }
 
-    private V1Job CreateJobDefinition(string jobName)
+    private static V1Job CreateJobDefinition(string jobName)
     {
       var job = new V1Job()
       {
@@ -127,7 +125,7 @@ namespace ListenerAPI.Classes
             {
               Containers = new List<V1Container>()
               {
-                new V1Container()
+                new()
                 {
                   Name = "jet-worker",
                   Image = "acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/jobworker:dev",

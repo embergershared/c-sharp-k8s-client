@@ -1,0 +1,5 @@
+﻿[*.cs]
+
+# IDE0290: Use primary constructor
+# Set as when switching to primary constructor, Getting the error: "Class cannot have primary constructor"
+dotnet_diagnostic.IDE0290.severity = none

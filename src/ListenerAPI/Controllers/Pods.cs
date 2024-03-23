@@ -37,14 +37,11 @@ namespace ListenerAPI.Controllers
             try
             {
                 var podsList = await _k8SClient.GetPodsAsync();
-
-                _logger.LogInformation($"Returned: " +
-                                       string.Join(", ", podsList.ToArray()));
                 return Ok(podsList);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Called failed with exception: {ex}");
+              _logger.LogError("Called failed with exception: {ex}", ex);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     "Error retrieving the pods");
             }

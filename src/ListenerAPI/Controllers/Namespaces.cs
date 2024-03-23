@@ -35,14 +35,11 @@ namespace ListenerAPI.Controllers
             try
             {
                 var namespacesList = await _k8SClient.GetNamespacesAsync();
-
-                _logger.LogInformation($"Returned: " +
-                                       string.Join(", ", namespacesList.ToArray()));
                 return Ok(namespacesList);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Called failed with exception: {ex}");
+                _logger.LogError("Called failed with exception: {ex}", ex);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     "Error retrieving the namespaces");
             }

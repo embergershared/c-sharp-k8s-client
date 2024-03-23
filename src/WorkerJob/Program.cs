@@ -31,6 +31,7 @@ namespace WorkerJob
             var host = builder.Build();
             #endregion
 
+            host.Services.GetRequiredService<ILogger<Program>>().LogInformation("WorkerJob started");
             await host.RunAsync();
         }
     }

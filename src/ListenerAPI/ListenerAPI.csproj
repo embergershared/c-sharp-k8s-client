@@ -13,6 +13,7 @@
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.4" />
     <PackageReference Include="DnsClient" Version="1.7.0" />
     <PackageReference Include="KubernetesClient" Version="13.0.26" />
+    <PackageReference Include="Seq.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 

@@ -43,7 +43,7 @@ namespace ListenerAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Called failed with exception: {ex}");
+                _logger.LogError("Called failed with exception: {ex}", ex);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                                        "Error creating the job");
             }

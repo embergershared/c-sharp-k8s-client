@@ -34,7 +34,7 @@ namespace ListenerAPI.Classes
 
       // See Client lifetime recommendations for wider use out of this POC: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet#client-lifetime
 
-      _logger.LogDebug("Creating a SbClient to the namespace: {@sb_ns}, with MI \"{@client_id}\"", sbNamespace, clientId);
+      _logger.LogDebug("Creating a ServiceBusClient to the namespace: {@sb_ns}, with Managed Identity \"{@mi_id}\"", sbNamespace, clientId);
       var fullyQualifiedNamespace = $"{sbNamespace}.{Const.SbPublicSuffix}";
 
       try
@@ -54,14 +54,13 @@ namespace ListenerAPI.Classes
             });
           _sbClient = new ServiceBusClient(fullyQualifiedNamespace, credential, _clientOptions);
         }
-
-        _logger.LogInformation($"ServiceBusClient created");
       }
       catch (Exception ex)
       {
         _logger.LogError(ex, $"ServiceBusClient creation failed");
       }
 
+      _logger.LogInformation("ServiceBusClient created: {@sb_Id}", _sbClient?.Identifier);
       return _sbClient;
     }
 
@@ -72,19 +71,32 @@ namespace ListenerAPI.Classes
       // Create an Azure ServiceBusClient that will use a connection string
       // Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=connection-string
 
+      _logger.LogDebug("Creating a ServiceBusClient with the Connection string: \"{@sb_cs}\"", connString);
+
       // Use the connection string to create a client.
       try
       {
         _sbClient = new ServiceBusClient(connString, _clientOptions);
-
-        _logger.LogInformation($"ServiceBusClient created");
       }
       catch (Exception ex)
       {
-        _logger.LogError(ex, $"ServiceBusClient creation failed");
+        _logger.LogError("ServiceBusClient creation failed with exception: {ex}", ex);
       }
 
+      _logger.LogInformation("ServiceBusClient created: {@sb_Id}", _sbClient?.Identifier);
       return _sbClient;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+      _logger.LogDebug("SbClient.DisposeAsync() called");
+
+      if (_sbClient != null)
+      {
+        _logger.LogInformation("ServiceBusClient disposed: {@sb_Id}", _sbClient.Identifier);
+        await _sbClient.DisposeAsync();
+      }
+      GC.SuppressFinalize(this);
     }
 
     private static ServiceBusClientOptions GetServiceBusClientOptions()
@@ -97,17 +109,6 @@ namespace ListenerAPI.Classes
         TransportType = ServiceBusTransportType.AmqpWebSockets
       };
       return clientOptions;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-      _logger.LogDebug("SbClient.DisposeAsync() called");
-
-      if (_sbClient != null)
-      {
-        await _sbClient.DisposeAsync();
-      }
-      GC.SuppressFinalize(this);
     }
   }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Interfaces;
@@ -27,13 +28,14 @@ namespace ListenerAPI.Classes
 
       if (sbClient == null)
       {
-        _logger.LogError("Service Bus client is not created");
-        throw new Exception($"The ServiceBus client should be created before sending messages.");
+        _logger.LogError("ServiceBusClient is not created");
+        throw new Exception($"The ServiceBusClient should be created before sending messages.");
       }
 
       try
       {
         _sbSender = sbClient.CreateSender(queueName);
+        _logger.LogInformation("ServiceBusSender created: {@sbs_Id}", _sbSender.Identifier);
       }
       catch (Exception ex)
       {
@@ -56,13 +58,13 @@ namespace ListenerAPI.Classes
 
       try
       {
-        // Use the producer client to send the batch of messages to the Service Bus queue
+        // Use the sender client to send the batch of messages to the Service Bus queue
         await _sbSender.SendMessagesAsync(messageBatch);
-        _logger.LogInformation("A batch of {numOfMessages} messages has been published to the ServiceBus/Queue: {sbName}/{queueName}.", numOfMessages, _sbSender.FullyQualifiedNamespace, queueName);
+        _logger.LogInformation("A batch of {numOfMessages} messages has been SentAsync to ServiceBus/Queue: {sbName}/{queueName}.", numOfMessages, _sbSender.FullyQualifiedNamespace, queueName);
       }
       finally
       {
-        // Calling DisposeAsync on client types is required to ensure that network
+        // Calling DisposeAsync on sender client types is required to ensure that network
         // resources and other unmanaged objects are properly cleaned up.
         await _sbSender.DisposeAsync();
       }
@@ -74,10 +76,10 @@ namespace ListenerAPI.Classes
 
       if (_sbSender != null)
       {
+        _logger.LogInformation("ServiceBusSender disposed: {@sb_Id}", _sbSender.Identifier);
         await _sbSender.DisposeAsync();
       }
       GC.SuppressFinalize(this);
-
     }
     #endregion
   }

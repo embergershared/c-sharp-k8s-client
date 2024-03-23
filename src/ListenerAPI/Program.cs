@@ -4,6 +4,7 @@ using ListenerAPI.Factories;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ListenerAPI
 {
@@ -30,6 +31,18 @@ namespace ListenerAPI
       builder.Services.AddSingletonFactory<ISbClient, SbClient>(); // Factory to generate ISbClient singleton instances per ServiceBus namespaces, if needed
       builder.Services.AddTransientFactory<ISbSender, SbSender>(); // Factory to generate ISbSender transient instances per senders on a namespace queue, that connects only to send batch messages, then disconnects
 
+      // Logging with Seq redirection
+      builder.Services.AddLogging(loggingBuilder => {
+        //loggingBuilder.ClearProviders();
+        //loggingBuilder.AddSimpleConsole(consoleFormatterOptions =>
+        //{
+        //  consoleFormatterOptions.IncludeScopes = true;
+        //  consoleFormatterOptions.SingleLine = true;
+        //  consoleFormatterOptions.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
+        //});
+        loggingBuilder.AddSeq(builder.Configuration.GetSection("Seq"));
+      });
+
       #endregion
 
       #region Building App
@@ -49,6 +62,7 @@ namespace ListenerAPI
       app.MapControllers();
       #endregion
 
+      app.Services.GetRequiredService<ILogger<Program>>().LogInformation("ListenerAPI started");
       await app.RunAsync();
     }
   }

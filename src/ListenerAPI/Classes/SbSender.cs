@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Interfaces;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace ListenerAPI.Classes

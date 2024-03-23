@@ -10,7 +10,7 @@ namespace ListenerAPI.Factories
       where TImplementation : class, TInterface
     {
       services.AddSingleton<TInterface, TImplementation>();
-      services.AddSingleton<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface singleton instances per calls, if needed
+      services.AddSingleton<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface SINGLETON instances per calls, if needed
       services.AddSingleton<IAbstractFactory<TInterface>, AbstractFactory<TInterface>>();
     }
 
@@ -19,9 +19,8 @@ namespace ListenerAPI.Factories
       where TImplementation : class, TInterface
     {
       services.AddTransient<TInterface, TImplementation>();
-      services.AddSingleton<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface singleton instances per calls, if needed
+      services.AddSingleton<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface TRANSIENT instances per calls, if needed
       services.AddSingleton<IAbstractFactory<TInterface>, AbstractFactory<TInterface>>();
     }
-
   }
 }

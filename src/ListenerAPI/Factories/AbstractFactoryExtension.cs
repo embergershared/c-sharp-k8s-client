@@ -19,8 +19,8 @@ namespace ListenerAPI.Factories
       where TImplementation : class, TInterface
     {
       services.AddTransient<TInterface, TImplementation>();
-      services.AddSingleton<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface TRANSIENT instances per calls, if needed
-      services.AddSingleton<IAbstractFactory<TInterface>, AbstractFactory<TInterface>>();
+      services.AddTransient<Func<TInterface>>(x => () => x.GetService<TInterface>()!); // Factory to generate TInterface TRANSIENT instances per calls, if needed
+      services.AddTransient<IAbstractFactory<TInterface>, AbstractFactory<TInterface>>();
     }
   }
 }

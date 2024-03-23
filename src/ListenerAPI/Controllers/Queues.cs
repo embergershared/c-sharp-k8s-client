@@ -31,17 +31,7 @@ namespace ListenerAPI.Controllers
       _config = config;
       _sbClientFactory = sbClientFactory;
       _sbSenderFactory = sbSenderFactory;
-      _logger.LogInformation("Controllers/Queues constructed");
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-      _logger.LogInformation("Controllers/Queues disposing");
-      if (disposing)
-      {
-        //sbSender.DisposeClientAsync();
-      }
-      base.Dispose(disposing);
+      _logger.LogDebug("Controllers/Queues constructed");
     }
 
     // POST api/<QueuesController>
@@ -49,7 +39,6 @@ namespace ListenerAPI.Controllers
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-
     public async Task<ActionResult> Put([FromBody] int value)
     {
       _logger.LogInformation("HTTP POST /api/Queues called with {value} in body", value);
@@ -70,6 +59,7 @@ namespace ListenerAPI.Controllers
       return StatusCode(StatusCodes.Status500InternalServerError,
         "Error Sending messages");
     }
+
 
     private async Task<ActionResult> ActionResultAsync(int value, string sbNum)
     {
@@ -105,6 +95,16 @@ namespace ListenerAPI.Controllers
         return StatusCode(StatusCodes.Status500InternalServerError,
           "Error Sending messages");
       }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+      _logger.LogDebug("Controllers/Queues disposing");
+      if (disposing)
+      {
+        //sbSender.DisposeClientAsync();
+      }
+      base.Dispose(disposing);
     }
   }
 }

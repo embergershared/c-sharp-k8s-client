@@ -1,7 +1,10 @@
-﻿using System;
-using System.Net;
+﻿// Send messages to a Service Bus queue
+// Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=connection-string#add-code-to-send-messages-to-the-queue
+
+using System;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
+using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -35,7 +38,7 @@ namespace ListenerAPI.Classes
       try
       {
         _sbSender = sbClient.CreateSender(queueName);
-        _logger.LogInformation("ServiceBusSender created: {@sbs_Id}, on ServiceBusClient {@sbc_Id}", _sbSender.Identifier, sbClient.Identifier);
+        _logger.LogInformation("ServiceBusSender created: {@sbs_Id}, on ServiceBusClient {@sbc_Id}", _sbSender.Identifier, StringHelper.RemoveSbSuffix(sbClient?.Identifier));
       }
       catch (Exception ex)
       {
@@ -60,7 +63,7 @@ namespace ListenerAPI.Classes
       {
         // Use the sender client to send the batch of messages to the Service Bus queue
         await _sbSender.SendMessagesAsync(messageBatch);
-        _logger.LogInformation("A batch of {numOfMessages} messages has been SentAsync to ServiceBus/Queue: {sbName}/{queueName}.", numOfMessages, _sbSender.FullyQualifiedNamespace, queueName);
+        _logger.LogInformation("A batch of {numOfMessages} messages has been SentAsync to ServiceBus/Queue: {sbName}/{queueName}.", numOfMessages, StringHelper.RemoveSbSuffix(_sbSender.FullyQualifiedNamespace), queueName);
       }
       finally
       {

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Constants;
+using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -83,7 +84,7 @@ namespace ListenerAPI.Classes
         _logger.LogError("ServiceBusClient creation failed with exception: {ex}", ex);
       }
 
-      _logger.LogInformation("ServiceBusClient created: {@sb_Id}", _sbClient?.Identifier);
+      _logger.LogInformation("ServiceBusClient created: {@sb_Id}", StringHelper.RemoveSbSuffix(_sbClient?.Identifier));
       return _sbClient;
     }
 
@@ -93,7 +94,7 @@ namespace ListenerAPI.Classes
 
       if (_sbClient != null)
       {
-        _logger.LogInformation("ServiceBusClient disposed: {@sb_Id}", _sbClient.Identifier);
+        _logger.LogInformation("ServiceBusClient disposed: {@sb_Id}", StringHelper.RemoveSbSuffix(_sbClient.Identifier));
         await _sbClient.DisposeAsync();
       }
       GC.SuppressFinalize(this);

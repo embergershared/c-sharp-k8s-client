@@ -1,5 +1,7 @@
-// Using DI with the Azure SDK for .NET to access Azure Service Bus
+// Using DI with the Azure SDK for .NET to access Azure Service Bus Client
 // Ref: https://learn.microsoft.com/en-us/dotnet/azure/sdk/dependency-injection?tabs=web-app-builder
+// Using Azure Service Bus Quickstart
+// Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=passwordless
 
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;

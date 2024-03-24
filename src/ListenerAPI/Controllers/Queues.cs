@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using ListenerAPI.Classes;
 using ListenerAPI.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,8 +32,8 @@ namespace ListenerAPI.Controllers
     {
       _logger = logger;
       _config = config;
-      _sbClientFactory = sbClientFactory;
-      
+      _sbClientFactory = sbClientFactory ?? throw new ArgumentNullException(nameof(sbClientFactory));
+
       _logger.LogDebug("Controllers/Queues constructed");
     }
 
@@ -45,18 +46,21 @@ namespace ListenerAPI.Controllers
     {
       _logger.LogInformation("HTTP POST /api/Queues called with {value} in body", value);
 
-      var sbNamespaces = new List<string>
+      if (!bool.Parse(AppGlobal.Data["IsUsingServiceBus"]))
+        return StatusCode(StatusCodes.Status404NotFound,
+          "Error: No ServiceBus(es) set in configuration to send messages to");
+
+      var sbNamespaces = new List<string>();
+      foreach (var key in Const.SbNamesKeys)
       {
-        _config["ServiceBusMainName"] ?? string.Empty,
-        _config["ServiceBusSecondaryName"] ?? string.Empty
-      };
+        var sb = _config[key];
+        if (!string.IsNullOrEmpty(sb))
+        {
+          sbNamespaces.Add(sb);
+        }
+      }
 
       var tasks = new List<Task<ActionResult>>();
-
-      if (sbNamespaces.Count == 0)
-        return StatusCode(StatusCodes.Status500InternalServerError,
-          "Error: No Service Bus Namespaces to send to defined");
-
       foreach (var sbNamespace in sbNamespaces)
       {
         await AddSenderToQueuesTasks(value, sbNamespace, tasks);
@@ -69,8 +73,7 @@ namespace ListenerAPI.Controllers
         return CreatedAtAction(nameof(Put), value);
       }
 
-      return StatusCode(StatusCodes.Status500InternalServerError,
-        "Error Sending messages");
+      return StatusCode(StatusCodes.Status500InternalServerError, "Error Sending messages");
     }
 
     private async Task AddSenderToQueuesTasks(int value, string sbName, List<Task<ActionResult>> tasks)
@@ -79,7 +82,7 @@ namespace ListenerAPI.Controllers
       tasks.AddRange(queuesNames.Select(queue =>
         ActionResultAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), value)));
     }
-    
+
     private async Task<ActionResult> ActionResultAsync(ServiceBusSender sender, int value)
     {
       // create a batch to send multiple messages
@@ -112,16 +115,6 @@ namespace ListenerAPI.Controllers
       }
     }
 
-    protected override void Dispose(bool disposing)
-    {
-      _logger.LogDebug("Controllers/Queues disposing");
-      if (disposing)
-      {
-        //sbSender.DisposeClientAsync();
-      }
-      base.Dispose(disposing);
-    }
-
     private static async Task<List<string>> GetQueueNames(string serviceBusName)
     {
       // Query the available queues for the Service Bus namespace.
@@ -140,6 +133,14 @@ namespace ListenerAPI.Controllers
       return queueNames;
     }
 
-
+    protected override void Dispose(bool disposing)
+    {
+      _logger.LogDebug("Controllers/Queues disposing");
+      if (disposing)
+      {
+        //sbSender.DisposeClientAsync();
+      }
+      base.Dispose(disposing);
+    }
   }
 }

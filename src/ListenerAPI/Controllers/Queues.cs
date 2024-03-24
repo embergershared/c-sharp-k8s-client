@@ -200,59 +200,7 @@ namespace ListenerAPI.Controllers
       }
     }
 
-    //// Receive 1 message from all queue(s) in all Service Bus namespace(s)
-    //private async Task AddReceiveMessageFromQueuesTasksAsync(string sbName, List<Task<ReceivedMessage>> tasks)
-    //{
-    //  _logger.LogDebug("Queues.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) started", sbName);
-
-    //  var queuesNames = await GetQueueNamesAsync(sbName);
-    //  tasks.AddRange(queuesNames.Select(queue =>
-    //    ReceiveMessageFromQueueAsync(_sbClientFactory.CreateClient(sbName).CreateReceiver(queue))));
-    //}
-    //private async Task<ReceivedMessage> ReceiveMessageFromQueueAsync(ServiceBusReceiver receiver)
-    //{
-    //  _logger.LogDebug("Queues.ReceiveMessageFromQueueAsync({receiver}) started", receiver.Identifier);
-    //  var message = new ReceivedMessage
-    //  {
-    //    ServiceBusName = StringHelper.RemoveSbSuffix(receiver.FullyQualifiedNamespace),
-    //    QueueName = receiver.EntityPath
-    //  };
-
-    //  try
-    //  {
-    //    {
-    //      // the received message is a different type as it contains some service set properties
-    //      var sbReceivedMessage = await receiver.ReceiveMessageAsync();
-
-    //      message.IsSuccessfullyReceived = true;
-    //      message.Body = sbReceivedMessage.Body.ToString();
-    //      message.SeqNumber = sbReceivedMessage.SequenceNumber;
-    //      message.MessageId = sbReceivedMessage.MessageId;
-
-    //      // Complete the message: Delete it from the queue
-    //      await receiver.CompleteMessageAsync(sbReceivedMessage);
-
-    //      // ### Other Received message actions ###
-    //      // Ref: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.servicebus-readme?view=azure-dotnet#complete-a-message
-    //      //// Abandon the message: Release lock, allowing it to be picked again
-    //      //await receiver.AbandonMessageAsync(sbReceivedMessage);
-
-    //      //// Defer the message: Move it to Deferred state to be picked by ReceiveDeferredMessageAsync()
-    //      //await receiver.DeferMessageAsync(sbReceivedMessage);
-
-    //      //// Dead-letter the message: Move it to the Dead-letter queue
-    //      //await receiver.DeadLetterMessageAsync(sbReceivedMessage,"reason", "description");
-    //    }
-    //  }
-    //  catch (Exception ex)
-    //  {
-    //    _logger.LogError("Called failed with exception: {ex}", ex);
-    //  }
-
-    //  return message;
-    //}
-
-    // Receive a batch of X messages from all queue(s) in all Service Bus namespace(s)
+    // Receive X messages in a batch from all queue(s) in all Service Bus namespace(s)
     private async Task AddReceiveMessageBatchFromQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
     {
       _logger.LogDebug("Queues.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) started", sbName);
@@ -359,9 +307,8 @@ namespace ListenerAPI.Controllers
 
       return deletedMessages;
     }
-
-
-    // Get all queue(s) for a Service Bus namespace
+    
+    // Get all queue(s) of a Service Bus namespace
     private async Task<List<string>> GetQueueNamesAsync(string serviceBusName)
     {
       _logger.LogDebug("Queues.GetQueueNamesAsync({serviceBusName}) started", serviceBusName);

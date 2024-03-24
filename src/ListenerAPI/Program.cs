@@ -1,9 +1,6 @@
 // Using DI with the Azure SDK for .NET to access Azure Service Bus
 // Ref: https://learn.microsoft.com/en-us/dotnet/azure/sdk/dependency-injection?tabs=web-app-builder
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Classes;
@@ -14,6 +11,9 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ListenerAPI
 {

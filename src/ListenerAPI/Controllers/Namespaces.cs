@@ -1,13 +1,13 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
-using ListenerAPI.Interfaces;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
+﻿using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace ListenerAPI.Controllers
 {
-    [ApiController]
+  [ApiController]
     [Route("api/[controller]")]
     public class Namespaces : Controller
     {

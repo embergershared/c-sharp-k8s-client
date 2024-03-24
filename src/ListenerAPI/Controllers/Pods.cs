@@ -1,15 +1,15 @@
-﻿using System;
-using System.Threading.Tasks;
-using ListenerAPI.Interfaces;
+﻿using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ListenerAPI.Controllers
 {
-    [ApiController]
+  [ApiController]
     [Route("api/[controller]")]
     public class Pods : ControllerBase
     {

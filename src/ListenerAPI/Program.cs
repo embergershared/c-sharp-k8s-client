@@ -7,6 +7,7 @@ using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Classes;
 using ListenerAPI.Constants;
+using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Azure;
@@ -75,7 +76,7 @@ namespace ListenerAPI
 
       builder.Services.AddAzureClients(clientBuilder =>
       {
-        clientBuilder.UseCredential(new DefaultAzureCredential());
+        clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration["PreferredAzureAuth"]));
 
         // Create a dumb default client to avoid queues controller crash at creation (so we can send a 404)
         clientBuilder.AddServiceBusClientWithNamespace($"dumb{Const.SbPublicSuffix}");

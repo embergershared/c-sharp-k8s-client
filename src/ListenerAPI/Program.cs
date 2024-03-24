@@ -61,7 +61,7 @@ namespace ListenerAPI
 
       // ###  Azure Clients to use Service Bus(es)  ###
       var sbNamespaces = new List<string>();
-      foreach (var key in Const.SbNamesKeys)
+      foreach (var key in Const.SbNamesConfigKeyNames)
       {
         var sb = builder.Configuration[key];
         if (!string.IsNullOrEmpty(sb))

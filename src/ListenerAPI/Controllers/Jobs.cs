@@ -1,14 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using ListenerAPI.Constants;
+﻿using ListenerAPI.Constants;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace ListenerAPI.Controllers
 {
-    [ApiController]
+  [ApiController]
     [Route("api/[controller]")]
     public class Jobs : ControllerBase
     {

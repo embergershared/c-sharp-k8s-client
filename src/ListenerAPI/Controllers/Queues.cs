@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ListenerAPI.Factories;
-using ListenerAPI.Interfaces;
+using Azure.Identity;
+using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus.Administration;
+using ListenerAPI.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -17,20 +21,18 @@ namespace ListenerAPI.Controllers
   {
     private readonly ILogger<Queues> _logger;
     private readonly IConfiguration _config;
-    private readonly IAbstractFactory<ISbSender> _sbSenderFactory;
-    private readonly IAbstractFactory<ISbClient> _sbClientFactory;
+    private readonly IAzureClientFactory<ServiceBusClient> _sbClientFactory;
 
     public Queues(
       ILogger<Queues> logger,
       IConfiguration config,
-      IAbstractFactory<ISbClient> sbClientFactory,
-      IAbstractFactory<ISbSender> sbSenderFactory
+      IAzureClientFactory<ServiceBusClient> sbClientFactory
     )
     {
       _logger = logger;
       _config = config;
       _sbClientFactory = sbClientFactory;
-      _sbSenderFactory = sbSenderFactory;
+      
       _logger.LogDebug("Controllers/Queues constructed");
     }
 
@@ -43,11 +45,22 @@ namespace ListenerAPI.Controllers
     {
       _logger.LogInformation("HTTP POST /api/Queues called with {value} in body", value);
 
-      var tasks = new[]
+      var sbNamespaces = new List<string>
       {
-        ActionResultAsync(value, "01"),
-        ActionResultAsync(value, "02")
+        _config["ServiceBusMainName"] ?? string.Empty,
+        _config["ServiceBusSecondaryName"] ?? string.Empty
       };
+
+      var tasks = new List<Task<ActionResult>>();
+
+      if (sbNamespaces.Count == 0)
+        return StatusCode(StatusCodes.Status500InternalServerError,
+          "Error: No Service Bus Namespaces to send to defined");
+
+      foreach (var sbNamespace in sbNamespaces)
+      {
+        await AddSenderToQueuesTasks(value, sbNamespace, tasks);
+      }
 
       var results = await Task.WhenAll(tasks);
 
@@ -60,30 +73,32 @@ namespace ListenerAPI.Controllers
         "Error Sending messages");
     }
 
-
-    private async Task<ActionResult> ActionResultAsync(int value, string sbNum)
+    private async Task AddSenderToQueuesTasks(int value, string sbName, List<Task<ActionResult>> tasks)
     {
-      var connStringConfigKey = $"azSb{sbNum}PrimaryConnString";
-      var queueNameConfigKey = $"azSb{sbNum}QueueName";
+      var queuesNames = await GetQueueNames(sbName);
+      tasks.AddRange(queuesNames.Select(queue =>
+        ActionResultAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), value)));
+    }
+    
+    private async Task<ActionResult> ActionResultAsync(ServiceBusSender sender, int value)
+    {
+      // create a batch to send multiple messages
+      using var messageBatch = await sender.CreateMessageBatchAsync();
 
-      var sbConnString = _config.GetValue<string>(connStringConfigKey);
-      _logger.LogDebug("Found in config: \"{connStringConfigKey}\": \"{sbConnString}\"", connStringConfigKey, sbConnString);
-
-      var sbQueueSenderName = _config.GetValue<string>(queueNameConfigKey);
-      _logger.LogDebug("Found in config: \"{queueNameConfigKey}\": \"{sbQueueSenderName}\"", queueNameConfigKey, sbQueueSenderName);
-
-      if (sbConnString == null || sbQueueSenderName == null)
+      for (var i = 1; i <= value; i++)
       {
-        _logger.LogWarning("Missing configuration values for {connStringConfigKey} / {queueNameConfigKey} to send messages", connStringConfigKey, queueNameConfigKey);
-        return StatusCode(StatusCodes.Status500InternalServerError,
-          "Missing configuration to send messages");
+        // try adding a message to the batch
+        if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Message {i}")))
+        {
+          // if it is too large for the batch
+          throw new Exception($"The message {i} is too large to fit in the batch.");
+        }
       }
 
       try
       {
         {
-          var sbClient = _sbClientFactory.Create().CreateClientCS(sbConnString);
-          if (sbClient != null) await _sbSenderFactory.Create().SendMessagesAsync(sbClient, sbQueueSenderName, value);
+          await sender.SendMessagesAsync(messageBatch);
 
           return CreatedAtAction(nameof(Put), value);
         }
@@ -106,5 +121,25 @@ namespace ListenerAPI.Controllers
       }
       base.Dispose(disposing);
     }
+
+    private static async Task<List<string>> GetQueueNames(string serviceBusName)
+    {
+      // Query the available queues for the Service Bus namespace.
+      var adminClient = new ServiceBusAdministrationClient
+        ($"{serviceBusName}{Const.SbPublicSuffix}", new DefaultAzureCredential());
+      var queueNames = new List<string>();
+
+      // Because the result is async, the queue names need to be captured
+      // to a standard list to avoid async calls when registering. Failure to
+      // do so results in an error with the services collection.
+      await foreach (var queue in adminClient.GetQueuesAsync())
+      {
+        queueNames.Add(queue.Name);
+      }
+
+      return queueNames;
+    }
+
+
   }
 }

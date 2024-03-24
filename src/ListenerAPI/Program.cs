@@ -1,8 +1,15 @@
+// Using DI with the Azure SDK for .NET to access Azure Service Bus
+// Ref: https://learn.microsoft.com/en-us/dotnet/azure/sdk/dependency-injection?tabs=web-app-builder
+
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 using ListenerAPI.Classes;
-using ListenerAPI.Factories;
+using ListenerAPI.Constants;
 using ListenerAPI.Interfaces;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -25,21 +32,40 @@ namespace ListenerAPI
       builder.Services.AddSwaggerGen();
 
       // Dependency Injection
+      // ###  Kubernetes C# client  ###
       builder.Services.AddSingleton<IK8SClient, K8SClient>();
-      builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
+      //// ###  Dns resolver package  ###
+      //builder.Services.AddSingleton<IDnsResolver, DnsResolver>();
 
-      builder.Services.AddSingletonFactory<ISbClient, SbClient>(); // Factory to generate ISbClient singleton instances per ServiceBus namespaces, if needed
-      builder.Services.AddTransientFactory<ISbSender, SbSender>(); // Factory to generate ISbSender transient instances per senders on a namespace queue, that connects only to send batch messages, then disconnects
+      // ###  Azure Clients to use Service Bus(es)  ###
+      var sbNamespaces = new List<string>
+      {
+        builder.Configuration["ServiceBusMainName"] ?? string.Empty,
+        builder.Configuration["ServiceBusSecondaryName"] ?? string.Empty
+      };
 
-      // Logging with Seq redirection
-      builder.Services.AddLogging(loggingBuilder => {
-        //loggingBuilder.ClearProviders();
-        //loggingBuilder.AddSimpleConsole(consoleFormatterOptions =>
-        //{
-        //  consoleFormatterOptions.IncludeScopes = true;
-        //  consoleFormatterOptions.SingleLine = true;
-        //  consoleFormatterOptions.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
-        //});
+      if (sbNamespaces.Count != 0)
+      {
+        EnforceTls12();
+
+        builder.Services.AddAzureClients(clientBuilder =>
+        {
+          clientBuilder.UseCredential(new DefaultAzureCredential());
+
+          // Register ServiceBusClient for each Namespace
+          foreach (var sbNamespace in sbNamespaces)
+          {
+            AddServiceBusClient(clientBuilder, sbNamespace);
+          }
+
+          // Set up any default settings
+          clientBuilder.ConfigureDefaults(
+            builder.Configuration.GetSection("AzureDefaults"));
+        });
+      }
+
+      // ###  Logging with Seq redirection  ###
+        builder.Services.AddLogging(loggingBuilder => {
         loggingBuilder.AddSeq(builder.Configuration.GetSection("Seq"));
       });
 
@@ -66,6 +92,20 @@ namespace ListenerAPI
       logger.LogInformation("ListenerAPI started");
       
       await app.RunAsync();
+    }
+
+    private static void AddServiceBusClient(AzureClientFactoryBuilder clientBuilder, string sbName)
+    {
+      clientBuilder
+        .AddServiceBusClientWithNamespace($"{sbName}{Const.SbPublicSuffix}")
+        .WithName(sbName)
+        .ConfigureOptions(options => options.TransportType = ServiceBusTransportType.AmqpWebSockets);
+    }
+
+    private static void EnforceTls12()
+    {
+      // Enforce TLS 1.2 to connect to Service Bus
+      System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
     }
   }
 }

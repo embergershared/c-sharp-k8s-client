@@ -59,7 +59,7 @@ namespace ListenerAPI.Classes
 
         var namespacesList = namespaces.Body.Items.Select(ns => ns.Metadata.Name).ToList();
 
-        _logger.LogInformation("K8SClient.GetNamespacesAsync() returned: {@nsList}", string.Join(", ", namespacesList.ToArray()));
+        _logger.LogInformation("K8SClient.GetNamespacesAsync() returned: {@nsList}", string.Join(", ", [.. namespacesList]));
         return namespacesList;
       }
       else
@@ -76,7 +76,7 @@ namespace ListenerAPI.Classes
 
         var podsList = pods.Body.Items.Select(p => p.Metadata.Name).ToList();
 
-        _logger.LogInformation("K8SClient.GetPodsAsync() returned: {@podsList}", string.Join(", ", podsList.ToArray()));
+        _logger.LogInformation("K8SClient.GetPodsAsync() returned: {@podsList}", string.Join(", ", [.. podsList]));
         return podsList;
       }
       else

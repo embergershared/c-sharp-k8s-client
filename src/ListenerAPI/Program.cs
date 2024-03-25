@@ -3,7 +3,6 @@
 // Using Azure Service Bus Quickstart
 // Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=passwordless
 
-using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.Classes;
 using ListenerAPI.Constants;
@@ -15,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ListenerAPI
@@ -32,6 +30,7 @@ namespace ListenerAPI
       // Add ASP.NET Controller
       builder.Services.AddControllers();
 
+      // Add Swagger/OpenAPI
       // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
       //builder.Services.AddEndpointsApiExplorer();
       builder.Services.AddSwaggerGen(options =>
@@ -55,25 +54,17 @@ namespace ListenerAPI
         });
       });
 
-      // Dependency Injection
+      // Add QueuesProcessor background service
+      builder.Services.AddHostedService<QueuesProcessor>();
+
+      // ======  Dependency Injection  ======
       // ###  Kubernetes C# client  ###
       builder.Services.AddSingleton<IK8SClient, K8SClient>();
 
       // ###  Azure Clients to use Service Bus(es)  ###
-      var sbNamespaces = new List<string>();
-      foreach (var key in Const.SbNamesConfigKeyNames)
-      {
-        var sb = builder.Configuration[key];
-        if (!string.IsNullOrEmpty(sb))
-        {
-          sbNamespaces.Add(sb);
-        }
-      }
-
+      var sbNamespaces = AppGlobal.GetServiceBusNames(builder.Configuration);
       AppGlobal.Data["IsUsingServiceBus"] = (sbNamespaces.Count != 0).ToString();
-
       EnforceTls12();
-
       builder.Services.AddAzureClients(clientBuilder =>
       {
         clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration["PreferredAzureAuth"]));
@@ -81,10 +72,10 @@ namespace ListenerAPI
         // Create a dumb default client to avoid queues controller crash at creation (so we can send a 404)
         clientBuilder.AddServiceBusClientWithNamespace($"dumb{Const.SbPublicSuffix}");
 
-        // Register ServiceBusClient for each Namespace
+        // Register ServiceBusClient(s) for each Namespace(s)
         foreach (var sbNamespace in sbNamespaces)
         {
-          AddServiceBusClient(clientBuilder, sbNamespace);
+          AddServiceBusClient(clientBuilder, sbNamespace!);
         }
 
         // Set up any default settings
@@ -92,6 +83,10 @@ namespace ListenerAPI
           builder.Configuration.GetSection("AzureDefaults"));
       });
 
+      // ###  ServiceBus Queues  ###
+      builder.Services.AddTransient<IServiceBusQueues, ServiceBusQueues>();
+
+      // ======  Logging  ======
       // ###  Logging with Seq redirection  ###
       builder.Services.AddLogging(loggingBuilder => {
         loggingBuilder.AddSeq(builder.Configuration.GetSection("Seq"));

@@ -3,7 +3,9 @@
 // Using Azure Service Bus Quickstart
 // Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=passwordless
 
+using AutoMapper;
 using Azure.Messaging.ServiceBus;
+using ListenerAPI.AutoMapper;
 using ListenerAPI.Classes;
 using ListenerAPI.Constants;
 using ListenerAPI.Helpers;
@@ -54,8 +56,8 @@ namespace ListenerAPI
         });
       });
 
-      // Add QueuesProcessor background service
-      builder.Services.AddHostedService<QueuesProcessor>();
+      // Add SbProcessor background service
+      builder.Services.AddHostedService<SbProcessor>();
 
       // ======  Dependency Injection  ======
       // ###  Kubernetes C# client  ###
@@ -84,7 +86,10 @@ namespace ListenerAPI
       });
 
       // ###  ServiceBus Queues  ###
-      builder.Services.AddTransient<IServiceBusQueues, ServiceBusQueues>();
+      builder.Services.AddTransient<ISbMessages, SbMessages>();
+
+      // ###  AutoMapper  ###
+      builder.Services.AddAutoMapper(typeof(ReceivedMessageProfile));
 
       // ======  Logging  ======
       // ###  Logging with Seq redirection  ###
@@ -94,7 +99,7 @@ namespace ListenerAPI
 
       #endregion
 
-      #region Building AppGlobal
+      #region Build the App
       var app = builder.Build();
       var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
@@ -121,11 +126,11 @@ namespace ListenerAPI
       app.MapControllers();
       #endregion
 
-      logger.LogInformation("ListenerAPI started");
-      
+      logger.LogInformation("ListenerAPI {appStart} called", "app.RunAsync()");
       await app.RunAsync();
     }
 
+    #region Private Methods
     private static void AddServiceBusClient(AzureClientFactoryBuilder clientBuilder, string sbName)
     {
       clientBuilder
@@ -139,5 +144,6 @@ namespace ListenerAPI
       // Enforce TLS 1.2 to connect to Service Bus
       System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
     }
+    #endregion
   }
 }

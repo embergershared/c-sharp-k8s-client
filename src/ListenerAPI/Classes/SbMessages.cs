@@ -11,30 +11,34 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 
 namespace ListenerAPI.Classes
 {
-  public class ServiceBusQueues : IServiceBusQueues
+  public class SbMessages : ISbMessages
   {
-    private readonly ILogger<ServiceBusQueues> _logger;
+    private readonly ILogger<SbMessages> _logger;
     private readonly IConfiguration _config;
     private readonly IAzureClientFactory<ServiceBusClient> _sbClientFactory;
+    private readonly IMapper _mapper;
 
-    public ServiceBusQueues(
-      ILogger<ServiceBusQueues> logger,
+    public SbMessages(
+      ILogger<SbMessages> logger,
       IConfiguration config,
-      IAzureClientFactory<ServiceBusClient> sbClientFactory
+      IAzureClientFactory<ServiceBusClient> sbClientFactory,
+      IMapper mapper
     )
     {
       _logger = logger;
       _config = config;
       _sbClientFactory = sbClientFactory ?? throw new ArgumentNullException(nameof(sbClientFactory));
+      _mapper = mapper;
     }
 
     // Send X messages in a batch to all queue(s) in all Service Bus namespace(s)
-    public async Task AddSenderToQueuesTasksAsync(int value, string sbName, List<Task<int>> tasks)
+    public async Task AddSendMessagesToQueuesTasksAsync(int value, string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("ServiceBusQueues.AddSenderToQueuesTasks({value}, {sbName}, tasks) called", value, sbName);
+      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({value}, {sbName}, tasks) called", value, sbName);
 
       var queuesNames = await GetQueueNamesAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
@@ -42,7 +46,7 @@ namespace ListenerAPI.Classes
     }
     private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, int value)
     {
-      _logger.LogDebug("ServiceBusQueues.SendMessageBatchToQueueAsync({sender}, {value}) called", sender.Identifier, value);
+      _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {value}) called", sender.Identifier, value);
 
       // create a batch to send multiple messages
       using var messageBatch = await sender.CreateMessageBatchAsync();
@@ -74,9 +78,9 @@ namespace ListenerAPI.Classes
     }
 
     // Receive X messages in a batch from all queue(s) in all Service Bus namespace(s)
-    public async Task AddReceiveMessageBatchFromQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
+    public async Task AddReceiveMessagesBatchesFromQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
     {
-      _logger.LogDebug("ServiceBusQueues.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) called", sbName);
+      _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) called", sbName);
 
       var queuesNames = await GetQueueNamesAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
@@ -85,7 +89,7 @@ namespace ListenerAPI.Classes
     }
     private async Task<IReadOnlyList<ReceivedMessage>> ReceiveMessageBatchFromQueueAsync(ServiceBusReceiver receiver, int batchSize = 1)
     {
-      _logger.LogDebug("ServiceBusQueues.ReceiveMessageBatchFromQueueAsync({receiver}, {size}) called", receiver.Identifier, batchSize);
+      _logger.LogDebug("SbMessages.ReceiveMessageBatchFromQueueAsync({receiver}, {size}) called", receiver.Identifier, batchSize);
 
       var messages = new List<ReceivedMessage>();
 
@@ -97,15 +101,11 @@ namespace ListenerAPI.Classes
 
           foreach (var sbReceivedMessage in sbReceivedMessages)
           {
-            var receivedMessage = new ReceivedMessage
-            {
-              IsSuccessfullyReceived = true,
-              ServiceBusName = StringHelper.RemoveSbSuffix(receiver.FullyQualifiedNamespace),
-              QueueName = receiver.EntityPath,
-              Body = sbReceivedMessage.Body.ToString(),
-              SeqNumber = sbReceivedMessage.SequenceNumber,
-              MessageId = sbReceivedMessage.MessageId
-            };
+            var receivedMessage = _mapper.Map<ReceivedMessage>(sbReceivedMessage);
+            receivedMessage.IsSuccessfullyReceived = true;
+            receivedMessage.ServiceBusName = StringHelper.RemoveSbSuffix(receiver.FullyQualifiedNamespace);
+            receivedMessage.QueueName = receiver.EntityPath;
+
             messages.Add(receivedMessage);
 
             // Complete the message: Delete it from the queue
@@ -133,9 +133,9 @@ namespace ListenerAPI.Classes
     }
     
     // Delete all messages from a queue
-    public async Task AddDeleteAllFromQueuesTasksAsync(string sbName, List<Task<int>> tasks)
+    public async Task AddDeleteAllMessagesFromQueuesTasksAsync(string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("ServiceBusQueues.AddDeleteAllFromQueuesTasksAsync({sbName}, tasks) called", sbName);
+      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFromQueuesTasksAsync({sbName}, tasks) called", sbName);
 
       var queuesNames = await GetQueueNamesAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue => DeleteAllMessagesAsync(sbName, queue)));
@@ -190,7 +190,7 @@ namespace ListenerAPI.Classes
     // Get all queue(s) of a Service Bus namespace
     private async Task<List<string>> GetQueueNamesAsync(string serviceBusName)
     {
-      _logger.LogDebug("ServiceBusQueues.GetQueueNamesAsync({serviceBusName}) called", serviceBusName);
+      _logger.LogDebug("SbMessages.GetQueueNamesAsync({serviceBusName}) called", serviceBusName);
 
       // Query the available queues for the Service Bus namespace.
       var adminClient = new ServiceBusAdministrationClient
@@ -212,7 +212,7 @@ namespace ListenerAPI.Classes
     
     public ValueTask DisposeAsync()
     {
-      _logger.LogDebug("ServiceBusQueues.DisposeAsync() called");
+      _logger.LogDebug("SbMessages.DisposeAsync() called");
 
       GC.SuppressFinalize(this);
 

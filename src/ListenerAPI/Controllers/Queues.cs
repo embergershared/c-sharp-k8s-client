@@ -20,12 +20,12 @@ namespace ListenerAPI.Controllers
   {
     private readonly ILogger<Queues> _logger;
     private readonly IConfiguration _config;
-    private readonly IServiceBusQueues _sbQueues;
+    private readonly ISbMessages _sbQueues;
     
     public Queues(
       ILogger<Queues> logger,
       IConfiguration config,
-      IServiceBusQueues sbQueues
+      ISbMessages sbQueues
     )
     {
       _logger = logger;
@@ -51,7 +51,7 @@ namespace ListenerAPI.Controllers
       var receiveMessagesTasks = new List<Task<IReadOnlyList<ReceivedMessage>>>();
       foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
       {
-        await _sbQueues.AddReceiveMessageBatchFromQueuesTasksAsync(sbNamespace!, receiveMessagesTasks, count);
+        await _sbQueues.AddReceiveMessagesBatchesFromQueuesTasksAsync(sbNamespace!, receiveMessagesTasks, count);
       }
 
       // Execute the tasks on all the queues in parallel
@@ -85,7 +85,7 @@ namespace ListenerAPI.Controllers
       var tasks = new List<Task<int>>();
       foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
       {
-        await _sbQueues.AddSenderToQueuesTasksAsync(value, sbNamespace!, tasks);
+        await _sbQueues.AddSendMessagesToQueuesTasksAsync(value, sbNamespace!, tasks);
       }
 
       var results = await Task.WhenAll(tasks);
@@ -116,7 +116,7 @@ namespace ListenerAPI.Controllers
         var deleteAllTasks = new List<Task<int>>();
         foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
         {
-          await _sbQueues.AddDeleteAllFromQueuesTasksAsync(sbNamespace!, deleteAllTasks);
+          await _sbQueues.AddDeleteAllMessagesFromQueuesTasksAsync(sbNamespace!, deleteAllTasks);
         }
 
         // Execute the DeleteAll tasks on all the queues in parallel

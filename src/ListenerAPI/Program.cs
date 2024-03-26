@@ -3,7 +3,6 @@
 // Using Azure Service Bus Quickstart
 // Ref: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dotnet-get-started-with-queues?tabs=passwordless
 
-using AutoMapper;
 using Azure.Messaging.ServiceBus;
 using ListenerAPI.AutoMapper;
 using ListenerAPI.Classes;
@@ -15,7 +14,6 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System;
 using System.Threading.Tasks;
 
 namespace ListenerAPI
@@ -28,31 +26,30 @@ namespace ListenerAPI
       var builder = WebApplication.CreateBuilder(args);
       #endregion
 
+
       #region Adding Services
       // Add ASP.NET Controller
-      builder.Services.AddControllers();
-
+      builder.Services.AddControllersWithViews();
       // Add Swagger/OpenAPI
       // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-      //builder.Services.AddEndpointsApiExplorer();
       builder.Services.AddSwaggerGen(options =>
       {
         options.SwaggerDoc("v1", new OpenApiInfo
         {
           Version = "v1",
           Title = "JET Listener & Jobs",
-          Description = "A Listener that generates Kubernetes Jobs when receiving Service Bus messages.",
-          TermsOfService = new Uri("https://example.com/terms"),
-          Contact = new OpenApiContact
-          {
-            Name = "Contact",
-            Url = new Uri("https://example.com/contact")
-          },
-          License = new OpenApiLicense
-          {
-            Name = "License",
-            Url = new Uri("https://example.com/license")
-          }
+          Description = "A Listener Hosted Service that generates Kubernetes Jobs when receiving Service Bus messages, with WebAPI and Web pages for management.",
+          //TermsOfService = new Uri("https://example.com/terms"),
+          //Contact = new OpenApiContact
+          //{
+          //  Name = "Home page",
+          //  Url = new Uri("https://example.com/contact")
+          //},
+          //License = new OpenApiLicense
+          //{
+          //  Name = "License",
+          //  Url = new Uri("https://example.com/license")
+          //}
         });
       });
 
@@ -96,7 +93,6 @@ namespace ListenerAPI
       builder.Services.AddLogging(loggingBuilder => {
         loggingBuilder.AddSeq(builder.Configuration.GetSection("Seq"));
       });
-
       #endregion
 
       #region Build the App
@@ -116,14 +112,16 @@ namespace ListenerAPI
 
       logger.LogInformation("Adding DeveloperExceptionPage to the app");
       app.UseDeveloperExceptionPage();
+      app.UseExceptionHandler("/Home/Error");
       //}
 
-      //app.UseHttpsRedirection();
-
+      app.UseStaticFiles();
+      app.UseRouting();
       //app.UseAuthorization();
 
-      logger.LogInformation("Adding Controllers to the app");
-      app.MapControllers();
+      app.MapControllerRoute(
+      name: "default",
+      pattern: "{controller=Home}/{action=Index}/{id?}");
       #endregion
 
       logger.LogInformation("ListenerAPI {appStart} called", "app.RunAsync()");

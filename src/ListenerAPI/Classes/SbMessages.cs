@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using System.Collections;
 
 namespace ListenerAPI.Classes
 {
@@ -35,18 +36,18 @@ namespace ListenerAPI.Classes
       _mapper = mapper;
     }
 
-    // Send X messages in a batch to all queue(s) in all Service Bus namespace(s)
-    public async Task AddSendMessagesToQueuesTasksAsync(int value, string sbName, List<Task<int>> tasks)
+    // Send X messages in a batch to all queue(s) in 1 Service Bus namespace
+    public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(int messagesCount, string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({value}, {sbName}, tasks) called", value, sbName);
+      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, tasks) called", messagesCount, sbName);
 
-      var queuesNames = await GetQueueNamesAsync(sbName);
+      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
-        SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), value)));
+        SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), messagesCount)));
     }
     private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, int value)
     {
-      _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {value}) called", sender.Identifier, value);
+      _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {messagesCount}) called", sender.Identifier, value);
 
       // create a batch to send multiple messages
       using var messageBatch = await sender.CreateMessageBatchAsync();
@@ -77,12 +78,12 @@ namespace ListenerAPI.Classes
       }
     }
 
-    // Receive X messages in a batch from all queue(s) in all Service Bus namespace(s)
-    public async Task AddReceiveMessagesBatchesFromQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
+    // Receive X messages in a batch from all queue(s) in 1 Service Bus namespace
+    public async Task AddReceiveMessagesBatchesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
     {
       _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) called", sbName);
 
-      var queuesNames = await GetQueueNamesAsync(sbName);
+      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
         ReceiveMessageBatchFromQueueAsync(_sbClientFactory.CreateClient(sbName).CreateReceiver(queue), batchSize)
       ));
@@ -132,12 +133,12 @@ namespace ListenerAPI.Classes
       return messages;
     }
     
-    // Delete all messages from a queue
-    public async Task AddDeleteAllMessagesFromQueuesTasksAsync(string sbName, List<Task<int>> tasks)
+    // Delete all messages from all queue(s) in 1 Service Bus namespace
+    public async Task AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFromQueuesTasksAsync({sbName}, tasks) called", sbName);
+      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync({sbName}, tasks) called", sbName);
 
-      var queuesNames = await GetQueueNamesAsync(sbName);
+      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue => DeleteAllMessagesAsync(sbName, queue)));
     }
     private async Task<int> DeleteAllMessagesAsync(string sbName, string queue)
@@ -186,16 +187,16 @@ namespace ListenerAPI.Classes
 
       return deletedMessages;
     }
-    
-    // Get all queue(s) of a Service Bus namespace
-    private async Task<List<string>> GetQueueNamesAsync(string serviceBusName)
+
+    // Get all queue(s) in 1 Service Bus namespace
+    private async Task<List<string>> GetAllQueuesNamesIn1NsAsync(string serviceBusName)
     {
-      _logger.LogDebug("SbMessages.GetQueueNamesAsync({serviceBusName}) called", serviceBusName);
+      _logger.LogDebug("SbMessages.GetAllQueuesNamesIn1NsAsync({serviceBusName}) called", serviceBusName);
 
       // Query the available queues for the Service Bus namespace.
       var adminClient = new ServiceBusAdministrationClient
       ($"{serviceBusName}{Const.SbPublicSuffix}",
-        AzureCreds.GetCred(_config.GetValue<string>("PreferredAzureAuth"))
+        AzureCreds.GetCred(_config.GetValue<string>(Const.AzureIdentityPreferredConfigKeyName))
       );
       var queueNames = new List<string>();
 
@@ -217,6 +218,34 @@ namespace ListenerAPI.Classes
       GC.SuppressFinalize(this);
 
       return new ValueTask(Task.CompletedTask);
+    }
+
+    public bool AddSendMessagesTo1Ns1QueueTask(int messagesCount, string sbName, string qName, List<Task<int>> tasks)
+    {
+      try
+      {
+        tasks.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
+        return true;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
+        return false;
+      }
+    }
+
+    public bool AddDeleteAllMessagesFrom1Ns1QueueTask(string sbName, string qName, List<Task<int>> tasks)
+    {
+      try
+      {
+        tasks.Add(DeleteAllMessagesAsync(sbName, qName));
+        return true;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Error adding AddDeleteAllMessagesFrom1Ns1QueueTask task: {ex}", ex);
+        return false;
+      }
     }
   }
 }

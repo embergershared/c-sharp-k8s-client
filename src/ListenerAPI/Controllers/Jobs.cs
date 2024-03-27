@@ -31,15 +31,15 @@ namespace ListenerAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult> Put([FromBody] string value)
+        public async Task<ActionResult> Put([FromBody] string JobName)
         {
             _logger.LogInformation("HTTP POST /api/Jobs called");
 
             try
             {
-                await _k8SClient.CreateJobAsync(value, Const.K8SNsName);
+                await _k8SClient.CreateJobAsync(JobName, Const.K8SNsName);
                 //return StatusCode(StatusCodes.Status201Created, "Job created");
-                return CreatedAtAction(nameof(Put), value);
+                return StatusCode(StatusCodes.Status201Created, $"Created job/{JobName} in namespace {Const.K8SNsName}");
             }
             catch (Exception ex)
             {

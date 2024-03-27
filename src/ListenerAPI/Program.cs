@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace ListenerAPI
 {
@@ -24,12 +25,15 @@ namespace ListenerAPI
     {
       #region Initialization
       var builder = WebApplication.CreateBuilder(args);
-      #endregion
-
-
+            #endregion
+            
       #region Adding Services
+      // Add Cache
+      builder.Services.AddMemoryCache();
+
       // Add ASP.NET Controller
       builder.Services.AddControllersWithViews();
+
       // Add Swagger/OpenAPI
       // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
       builder.Services.AddSwaggerGen(options =>
@@ -53,8 +57,11 @@ namespace ListenerAPI
         });
       });
 
-      // Add SbProcessor background service
-      builder.Services.AddHostedService<SbProcessor>();
+      // Add Service Bus Processor background service
+      if (builder.Configuration.GetValue<bool>(Const.SbProcessorStartConfigKeyName))
+      {
+        builder.Services.AddHostedService<SbProcessor>();
+      }
 
       // ======  Dependency Injection  ======
       // ###  Kubernetes C# client  ###
@@ -66,7 +73,7 @@ namespace ListenerAPI
       EnforceTls12();
       builder.Services.AddAzureClients(clientBuilder =>
       {
-        clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration["PreferredAzureAuth"]));
+        clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration[Const.AzureIdentityPreferredConfigKeyName]));
 
         // Create a dumb default client to avoid queues controller crash at creation (so we can send a 404)
         clientBuilder.AddServiceBusClientWithNamespace($"dumb{Const.SbPublicSuffix}");
@@ -82,7 +89,7 @@ namespace ListenerAPI
           builder.Configuration.GetSection("AzureDefaults"));
       });
 
-      // ###  ServiceBus Queues  ###
+      // ###  ServiceBus Messages Interface  ###
       builder.Services.AddTransient<ISbMessages, SbMessages>();
 
       // ###  AutoMapper  ###

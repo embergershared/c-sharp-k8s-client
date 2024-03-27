@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Azure.Messaging.ServiceBus;
 using IdentityModel.OidcClient;
+using ListenerAPI.Constants;
 using ListenerAPI.Helpers;
 using ListenerAPI.Models;
 using Microsoft.Extensions.Azure;
@@ -39,7 +40,7 @@ namespace ListenerAPI.Classes
       _logger = logger;
       _sbClientFactory = sbClientFactory ?? throw new ArgumentNullException(nameof(sbClientFactory));
       _mapper = mapper;
-      _queue = AppGlobal.GetNames(config);
+      _queue = AppGlobal.GetNames(config, Const.SbProcessorQueueConfigKeyName);
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

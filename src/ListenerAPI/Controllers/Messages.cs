@@ -77,9 +77,17 @@ namespace ListenerAPI.Controllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Post(int messagesToCreateCount, string? nsQueueName)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "<Pending>")]
+    public async Task<IActionResult> Post(int? messagesToCreateCount, string? nsQueueName, [FromBody] string? parametersJson)
     {
-      _logger.LogInformation("HTTP POST /api/Messages called with {messagesToCreateCount} messages to create", messagesToCreateCount);
+      var messagesToCreateCountValue = messagesToCreateCount ??= 1;
+
+      var logMessage = $"HTTP POST /api/messages called with parameters: {messagesToCreateCount} messages to create";
+      if (!string.IsNullOrEmpty(nsQueueName))
+        logMessage += $", {nsQueueName} queue";
+      if (!string.IsNullOrEmpty(parametersJson))
+        logMessage += $", {parametersJson}";
+      _logger.LogInformation(logMessage, messagesToCreateCount, nsQueueName, parametersJson);
 
       if (messagesToCreateCount < 1)
         return BadRequest("Error: The messages to create count must be greater than 0");
@@ -93,16 +101,16 @@ namespace ListenerAPI.Controllers
       {
         foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
         {
-          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(messagesToCreateCount, sbNamespace!, sendMessagesTasks);
+          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(messagesToCreateCountValue, sbNamespace!, sendMessagesTasks);
         }
       }
       else
       {
-        var sbNsQueue = AppGlobal.GetNames(nsQueueName);
+        var sbNsQueue = new SbNsQueue(nsQueueName);
         if (sbNsQueue.SbNamespace != null && sbNsQueue.QueueName != null)
         {
           _sbMessages.AddSendMessagesTo1Ns1QueueTask(
-            messagesToCreateCount, 
+            messagesToCreateCountValue, 
             sbNsQueue.SbNamespace, 
             sbNsQueue.QueueName, 
             sendMessagesTasks);
@@ -152,7 +160,7 @@ namespace ListenerAPI.Controllers
         }
         else
         {
-          var sbNsQueue = AppGlobal.GetNames(nsQueueName);
+          var sbNsQueue = new SbNsQueue(nsQueueName);
           if (sbNsQueue.SbNamespace != null && sbNsQueue.QueueName != null)
           {
             _sbMessages.AddDeleteAllMessagesFrom1Ns1QueueTask(

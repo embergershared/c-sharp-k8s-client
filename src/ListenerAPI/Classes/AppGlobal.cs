@@ -20,32 +20,16 @@ namespace ListenerAPI.Classes
         .Select(key => config[key])
         .Where(sb => !string.IsNullOrEmpty(sb)).ToList();
 
-      sbNamespaces.Add((GetNames(config, Const.SbProcessorQueueConfigKeyName)).SbNamespace);
-      sbNamespaces.Add((GetNames(config, Const.SbMessagesTargetConfigKeyName)).SbNamespace);
+      sbNamespaces.Add((GetServiceBusName(config, Const.SbProcessorQueueConfigKeyName)));
+      sbNamespaces.Add((GetServiceBusName(config, Const.SbMessagesTargetConfigKeyName)));
 
       return sbNamespaces.Distinct().ToList();
     }
 
-    internal static SbNsQueue GetNames(IConfiguration config, string configKey)
+    internal static string? GetServiceBusName(IConfiguration config, string configKey)
     {
-      var appSettingValue = config[configKey]!.Split("/");
-      var sbNsQueue = new SbNsQueue
-      {
-        SbNamespace = appSettingValue[0],
-        QueueName = appSettingValue[1],
-      };
-      return sbNsQueue;
-    }
-
-    internal static SbNsQueue GetNames(string nsQueueName)
-    {
-      var appSettingValue = nsQueueName!.Split("/");
-      var sbNsQueue = new SbNsQueue
-      {
-        SbNamespace = appSettingValue[0],
-        QueueName = appSettingValue[1],
-      };
-      return sbNsQueue;
+      var sbQueue = new SbNsQueue(config, configKey);
+      return sbQueue.SbNamespace;
     }
   }
 }

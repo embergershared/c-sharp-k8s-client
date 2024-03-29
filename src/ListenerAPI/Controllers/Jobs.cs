@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using ListenerAPI.Models;
 
 namespace ListenerAPI.Controllers
 {
@@ -31,17 +32,17 @@ namespace ListenerAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult> Put([FromBody] string JobName)
+        public async Task<ActionResult<string>> PostCreateJob(string JobName)
         {
             _logger.LogInformation("HTTP POST /api/Jobs called");
 
             try
             {
-                await _k8SClient.CreateJobAsync(JobName, Const.K8SNsName);
-                //return StatusCode(StatusCodes.Status201Created, "Job created");
-                return StatusCode(StatusCodes.Status201Created, $"Created job/{JobName} in namespace {Const.K8SNsName}");
-            }
-            catch (Exception ex)
+                var result = await _k8SClient.CreateJobAsync(JobName, Const.K8SNsName);
+        return StatusCode(StatusCodes.Status201Created, $"Created job.batch/{result.JobName} in namespace {result.JobNamespaceName} at {result.JobCreationTime.Value.LocalDateTime} with image {result.JobContainerImage} and nodeSelector {result.JobNodeSelector}");
+
+      }
+      catch (Exception ex)
             {
                 _logger.LogError("Called failed with exception: {ex}", ex);
                 return StatusCode(StatusCodes.Status500InternalServerError,

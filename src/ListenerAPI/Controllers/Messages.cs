@@ -1,22 +1,21 @@
-﻿using ListenerAPI.Classes;
+﻿using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
 using ListenerAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using ListenerAPI.Constants;
 
 namespace ListenerAPI.Controllers
 {
   [ApiController]
   [Route("api/[controller]")]
-
   public class Messages : Controller
   {
     private readonly ILogger<Messages> _logger;
@@ -41,7 +40,7 @@ namespace ListenerAPI.Controllers
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Get(int count = 1)
+    public async Task<ActionResult<IEnumerable<ReceivedMessage>>> Get(int count = 1)
     {
       _logger.LogInformation("HTTP GET /api/Messages/{count} called", count);
 
@@ -68,56 +67,59 @@ namespace ListenerAPI.Controllers
         var resultJson = JsonSerializer.Serialize(result);
         _logger.LogInformation("Received message: {content}", resultJson);
       }
-      return Ok(JsonSerializer.Serialize(receivedResults));
+      return Ok(receivedResults);
     }
 
     // POST api/messages
+    /// <summary>
+    /// Creates new JobRequest(s) messages in the queue(s).
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///     POST /api/messages
+    ///
+    /// {
+    ///   "JobName": "JobToCreate",
+    ///   "MessagesToCreateCount": 1,
+    ///   "Parameter1": "script1.py"
+    /// }
+    ///
+    /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "<Pending>")]
-    public async Task<IActionResult> Post(int? messagesToCreateCount, string? nsQueueName, [FromBody] string? parametersJson)
+    public async Task<IActionResult> Post([FromBody] JobRequest jobRequest)
     {
-      var messagesToCreateCountValue = messagesToCreateCount ??= 1;
+      // Logging POST call
+      _logger.LogInformation("HTTP POST /api/messages called with body: {jobRequest} messages to create", JsonSerializer.Serialize(jobRequest));
 
-      var logMessage = $"HTTP POST /api/messages called with parameters: {messagesToCreateCount} messages to create";
-      if (!string.IsNullOrEmpty(nsQueueName))
-        logMessage += $", {nsQueueName} queue";
-      if (!string.IsNullOrEmpty(parametersJson))
-        logMessage += $", {parametersJson}";
-      _logger.LogInformation(logMessage, messagesToCreateCount, nsQueueName, parametersJson);
-
-      if (messagesToCreateCount < 1)
-        return BadRequest("Error: The messages to create count must be greater than 0");
+      // Processing received JobRequest JSON
+      if (!jobRequest.IsValid(out var error))
+        return BadRequest($"Error: The JSON provided is invalid: {error}");
 
       if (!bool.Parse(AppGlobal.Data["IsUsingServiceBus"]))
         return NotFound("Error: No ServiceBus(es) set in configuration to SEND messages TO");
 
+      // Creating aysnc Tasks List to send the message(s)
       var sendMessagesTasks = new List<Task<int>>();
 
-      if (string.IsNullOrEmpty(nsQueueName))
+      if (!jobRequest.SbNsQueue.IsValid())
       {
         foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
         {
-          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(messagesToCreateCountValue, sbNamespace!, sendMessagesTasks);
+          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(jobRequest.MessagesToCreateCount, sbNamespace!, sendMessagesTasks);
         }
       }
       else
       {
-        var sbNsQueue = new SbNsQueue(nsQueueName);
-        if (sbNsQueue.SbNamespace != null && sbNsQueue.QueueName != null)
         {
           _sbMessages.AddSendMessagesTo1Ns1QueueTask(
-            messagesToCreateCountValue, 
-            sbNsQueue.SbNamespace, 
-            sbNsQueue.QueueName, 
+            jobRequest.MessagesToCreateCount,
+            jobRequest.SbNsQueue.SbNamespace!,
+            jobRequest.SbNsQueue.QueueName!, 
             sendMessagesTasks);
-        }
-        else
-        {
-          return NotFound($"Error: The ServiceBus Namespace/Queue: {nsQueueName} is not valid");
         }
       }
 
@@ -128,7 +130,7 @@ namespace ListenerAPI.Controllers
 
       return results.Sum() switch
       {
-        > 0 => StatusCode(StatusCodes.Status201Created, $"Created {messagesToCreateCount} new message(s)"),
+        > 0 => StatusCode(StatusCodes.Status201Created, $"Created {jobRequest.MessagesToCreateCount} new message(s)"),
         0 => StatusCode(StatusCodes.Status204NoContent, "No messages created"),
         _ => StatusCode(StatusCodes.Status500InternalServerError, "Error Sending messages")
       };

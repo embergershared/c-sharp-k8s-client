@@ -19,13 +19,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace ListenerAPI
 {
-  public class Program
+    public class Program
   {
     public static async Task Main(string[] args)
     {
       #region Initialization
       var builder = WebApplication.CreateBuilder(args);
-            #endregion
+      #endregion
             
       #region Adding Services
       // Add Cache
@@ -36,6 +36,7 @@ namespace ListenerAPI
 
       // Add Swagger/OpenAPI
       // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+      //builder.Services.AddEndpointsApiExplorer(); // Only used with Minimal API
       builder.Services.AddSwaggerGen(options =>
       {
         options.SwaggerDoc("v1", new OpenApiInfo

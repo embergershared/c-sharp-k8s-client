@@ -6,8 +6,8 @@ namespace ListenerAPI.Models
   {
     private const string SplitCharacter = "/";
 
-    public string? SbNamespace;
-    public string? QueueName;
+    public string? SbNamespace { get; set; }
+    public string? QueueName { get; set; }
 
     public SbNsQueue(IConfiguration config, string configKey)
     {
@@ -17,10 +17,22 @@ namespace ListenerAPI.Models
     {
       SplitArgument(nsQueueName);
     }
+    public SbNsQueue(string sbNamespace, string queueName)
+    {
+      this.SbNamespace = sbNamespace;
+      this.QueueName = queueName;
+    }
+    public SbNsQueue()
+    {
+    }
 
     public override string ToString()
     {
       return $"{SbNamespace}{SplitCharacter}{QueueName}";
+    }
+    public bool IsValid()
+    {
+      return !string.IsNullOrEmpty(SbNamespace) && !string.IsNullOrEmpty(QueueName);
     }
 
     private void SplitArgument(string argument)

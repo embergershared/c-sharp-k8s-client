@@ -16,7 +16,9 @@ namespace ListenerAPI.Interfaces
 
 
     // Per Service Bus namespace + queue operations
-    bool AddSendMessagesTo1Ns1QueueTask(int messagesCount, string sbName, string qName, List<Task<int>> tasks);
+    bool AddSendMessagesTo1Ns1QueueTask(string sbName, string qName, int messagesCount, List<Task<int>> sendTasksList);
+
+    bool AddSendMessagesTo1Ns1QueueTask(JobRequest jobRequest, List<Task<int>> sendTasksList);
 
     bool AddDeleteAllMessagesFrom1Ns1QueueTask(string sbName, string qName, List<Task<int>> tasks);
 

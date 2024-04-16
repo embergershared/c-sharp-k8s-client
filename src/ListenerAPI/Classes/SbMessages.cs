@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using System.Collections;
+using System.Text.Json;
 
 namespace ListenerAPI.Classes
 {
@@ -39,7 +39,7 @@ namespace ListenerAPI.Classes
     // Send X messages in a batch to all queue(s) in 1 Service Bus namespace
     public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(int messagesCount, string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, tasks) called", messagesCount, sbName);
+      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, sendTasksList) called", messagesCount, sbName);
 
       var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
@@ -78,10 +78,64 @@ namespace ListenerAPI.Classes
       }
     }
 
+    private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, JobRequest jobRequest)
+    {
+      _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {jobRequest}) called", sender.Identifier, jobRequest.ToString());
+      var value = jobRequest.MessagesToCreateCount;
+
+      // Create a Messages batch to send multiple messages
+      using var messageBatch = await sender.CreateMessageBatchAsync();
+
+      var messageBody = _mapper.Map<JobRequestMessageBody>(jobRequest);
+
+      // Create X messages and add them to the batch
+      for (var i = 1; i <= value; i++)
+      {
+        //var message = new ServiceBusMessage($"Body of message {i}.");
+
+        messageBody.JobName = $"{jobRequest.JobName}-{i:00}";
+        //var message = new ServiceBusMessage(JsonSerializer.Serialize(messageBody));
+
+        var message = new ServiceBusMessage
+        {
+          MessageId = Guid.NewGuid().ToString(),
+          Subject = "bases-jet",
+          Body = BinaryData.FromString(JsonSerializer.Serialize(messageBody)), //new BinaryData(body)
+          ApplicationProperties =
+          {
+            ["JobPriority"] = "Normal"
+          }
+        };
+
+        // try adding a message to the batch
+        if (!messageBatch.TryAddMessage(message))
+        {
+          // Exception if the batch becomes too large
+          throw new Exception($"The message {i} is too large to fit in the batch.");
+        }
+      }
+
+      // Send the batch to the Queue
+      try
+      {
+        {
+          await sender.SendMessagesAsync(messageBatch);
+
+          return value;
+        }
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Called failed with exception: {ex}", ex);
+
+        return -1;
+      }
+    }
+
     // Receive X messages in a batch from all queue(s) in 1 Service Bus namespace
     public async Task AddReceiveMessagesBatchesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
     {
-      _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, tasks) called", sbName);
+      _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
 
       var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
@@ -136,7 +190,7 @@ namespace ListenerAPI.Classes
     // Delete all messages from all queue(s) in 1 Service Bus namespace
     public async Task AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync({sbName}, tasks) called", sbName);
+      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
 
       var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue => DeleteAllMessagesAsync(sbName, queue)));
@@ -220,11 +274,11 @@ namespace ListenerAPI.Classes
       return new ValueTask(Task.CompletedTask);
     }
 
-    public bool AddSendMessagesTo1Ns1QueueTask(int messagesCount, string sbName, string qName, List<Task<int>> tasks)
+    public bool AddSendMessagesTo1Ns1QueueTask(string sbName, string qName, int messagesCount, List<Task<int>> sendTasksList)
     {
       try
       {
-        tasks.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
+        sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
         return true;
       }
       catch (Exception ex)
@@ -233,6 +287,21 @@ namespace ListenerAPI.Classes
         return false;
       }
     }
+
+    public bool AddSendMessagesTo1Ns1QueueTask(JobRequest jobRequest, List<Task<int>> sendTasksList)
+    {
+      try
+      {
+        sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(jobRequest.SbNsQueue.SbNamespace).CreateSender(jobRequest.SbNsQueue.QueueName), jobRequest));
+        return true;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
+        return false;
+      }
+    }
+
 
     public bool AddDeleteAllMessagesFrom1Ns1QueueTask(string sbName, string qName, List<Task<int>> tasks)
     {

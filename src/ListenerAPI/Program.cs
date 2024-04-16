@@ -95,6 +95,7 @@ namespace ListenerAPI
 
       // ###  AutoMapper  ###
       builder.Services.AddAutoMapper(typeof(ReceivedMessageProfile));
+      builder.Services.AddAutoMapper(typeof(MessageBodyProfile));
 
       // ======  Logging  ======
       // ###  Logging with Seq redirection  ###

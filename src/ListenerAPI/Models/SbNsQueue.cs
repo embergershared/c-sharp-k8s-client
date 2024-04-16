@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.ComponentModel;
 
 namespace ListenerAPI.Models
 {
@@ -6,9 +7,18 @@ namespace ListenerAPI.Models
   {
     private const string SplitCharacter = "/";
 
+    // Public Properties
+    [DefaultValue("sb-use2-446692-s4-aksafdpls-01")]
     public string? SbNamespace { get; set; }
+
+    [DefaultValue("jobrequests")]
     public string? QueueName { get; set; }
 
+    // Constructors
+    public SbNsQueue()
+    {
+    }
+    
     public SbNsQueue(IConfiguration config, string configKey)
     {
       SplitArgument(config[configKey]!);
@@ -22,10 +32,8 @@ namespace ListenerAPI.Models
       this.SbNamespace = sbNamespace;
       this.QueueName = queueName;
     }
-    public SbNsQueue()
-    {
-    }
 
+    // Public Methods
     public override string ToString()
     {
       return $"{SbNamespace}{SplitCharacter}{QueueName}";
@@ -35,6 +43,7 @@ namespace ListenerAPI.Models
       return !string.IsNullOrEmpty(SbNamespace) && !string.IsNullOrEmpty(QueueName);
     }
 
+    // Private Methods
     private void SplitArgument(string argument)
     {
       this.SbNamespace = (argument.Split(SplitCharacter))[0];

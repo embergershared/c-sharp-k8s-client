@@ -115,11 +115,17 @@ namespace ListenerAPI.Controllers
       else
       {
         {
+          //_sbMessages.AddSendMessagesTo1Ns1QueueTask(
+          //  jobRequest.SbNsQueue.SbNamespace!,
+          //  jobRequest.SbNsQueue.QueueName!,
+          //  jobRequest.MessagesToCreateCount,
+          //  sendMessagesTasks
+          //  );
           _sbMessages.AddSendMessagesTo1Ns1QueueTask(
-            jobRequest.MessagesToCreateCount,
-            jobRequest.SbNsQueue.SbNamespace!,
-            jobRequest.SbNsQueue.QueueName!, 
-            sendMessagesTasks);
+            jobRequest,
+            sendMessagesTasks
+          );
+
         }
       }
 

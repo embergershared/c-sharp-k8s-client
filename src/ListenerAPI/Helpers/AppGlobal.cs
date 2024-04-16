@@ -22,12 +22,14 @@ namespace ListenerAPI.Helpers
 
         internal static List<string?> GetServiceBusNames(IConfiguration config)
         {
-            var sbNamespaces = Const.SbNamesConfigKeyNames
-              .Select(key => config[key])
-              .Where(sb => !string.IsNullOrEmpty(sb)).ToList();
-
-            sbNamespaces.Add(GetServiceBusName(config, Const.SbProcessorQueueConfigKeyName));
-            sbNamespaces.Add(GetServiceBusName(config, Const.SbMessagesTargetConfigKeyName));
+            var sbNamespaces = new List<string?>
+            {
+              //Const.SbNamesConfigKeyNames
+              //  .Where(sb => !string.IsNullOrEmpty(sb)).ToList();
+              //  .Select(key => config[key])
+              GetServiceBusName(config, Const.SbProcessorQueueConfigKeyName),
+              GetServiceBusName(config, Const.SbMessagesTargetConfigKeyName)
+            };
 
             return sbNamespaces.Distinct().ToList();
         }

@@ -13,10 +13,24 @@ spec:
       labels:
         app: {{ include "listener.fullname" . }}-listener
     spec:
+      nodeSelector:
+        "kubernetes.azure.com/mode": user
       containers:
       - name: listener
         image: {{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          # limits:
+          #   memory: "128Mi"
+          #   cpu: "500m"
         imagePullPolicy: Always
+        env:
+        - name: MessagesTargetQueueName
+          value: "sb-use2-446692-s4-aksafdpls-01/jobrequests"
+        - name: StartMessagesProcessor
+          value: "false"
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         volumeMounts:

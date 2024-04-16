@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using ListenerAPI.Constants;
 using ListenerAPI.Helpers;
@@ -169,10 +170,11 @@ namespace ListenerAPI.Classes
                 }
               },
               RestartPolicy = "Never",
-              //NodeSelector = new Dictionary<string, string>
-              //{
+              NodeSelector = new Dictionary<string, string>
+              {
               //    { "kubernetes.azure.com/agentpool", "jobs" }
-              //}
+                  { "kubernetes.azure.com/mode", "user" }
+              }
             }
           }
         }

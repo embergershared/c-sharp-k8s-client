@@ -21,7 +21,8 @@ namespace ListenerAPI.Models
     
     public SbNsQueue(IConfiguration config, string configKey)
     {
-      SplitArgument(config[configKey]!);
+      var configValue = config[configKey];
+      if (configValue != null) SplitArgument(configValue);
     }
     public SbNsQueue(string nsQueueName)
     {

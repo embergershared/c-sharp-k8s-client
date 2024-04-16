@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using ListenerAPI.Constants;
+using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
+using ListenerAPI.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -85,26 +89,45 @@ namespace ListenerAPI.Classes
       }
     }
 
-    public async Task CreateJobAsync(string jobName, string namespaceName = "default")
+    public async Task<JobCreationResult> CreateJobAsync(string jobName, string namespaceName = "default")
     {
+      var jobCreationResult = new JobCreationResult();
+      var jobDefinition = CreateJobDefinition(jobName);
+
       try
       {
         if (_k8SClient != null)
         {
-          var job = CreateJobDefinition(jobName);
+          var httpResponse = await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(jobDefinition, namespaceName);
+          _logger.LogDebug("CreateNamespacedJobWithHttpMessagesAsync() response was: {@response}", httpResponse.Response);
 
-          var httpResponse = await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(job, namespaceName);
-          _logger.LogDebug("CreateJobAsync() response was: {@response}", httpResponse.Response);
+          jobCreationResult.JobName = jobDefinition.Name();
+          jobCreationResult.JobNamespaceName = namespaceName;
+          jobCreationResult.CreationResult = httpResponse.Response.ReasonPhrase ??= "Error";
+          jobCreationResult.JobCreationTime = httpResponse.Response.Headers.Date;
+          jobCreationResult.JobContainerImage = jobDefinition.Spec.Template.Spec.Containers[0].Image;
+          jobCreationResult.JobNodeSelector = jobDefinition.Spec.Template.Spec.NodeSelector != null ? StringHelper.DictToString(jobDefinition.Spec.Template.Spec.NodeSelector) : "None";
+
+          _logger.LogInformation("Job created: {jobResult}", JsonSerializer.Serialize(jobCreationResult));
         }
       }
       catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
       {
+        jobCreationResult.JobName = jobDefinition.Name();
+        jobCreationResult.JobNamespaceName = namespaceName;
+        jobCreationResult.CreationResult = "Job NOT created: Duplicate";
+
         _logger.LogError($"Job already exists");
       }
       catch (Exception ex)
       {
-        _logger.LogError("K8SClient.CreateJobAsync() threw an exception: {ex}", ex.ToString());
+        jobCreationResult.JobName = jobDefinition.Name();
+        jobCreationResult.JobNamespaceName = namespaceName;
+        jobCreationResult.CreationResult = $"Error: see log for Exception {ex.Message}";
+
+        _logger.LogError("Job NOT created: an exception was thrown: {ex}", ex.ToString());
       }
+      return jobCreationResult;
     }
 
     private static V1Job CreateJobDefinition(string jobName)
@@ -146,10 +169,10 @@ namespace ListenerAPI.Classes
                 }
               },
               RestartPolicy = "Never",
-              NodeSelector = new Dictionary<string, string>
-              {
-                  { "kubernetes.azure.com/agentpool", "jobs" }
-              }
+              //NodeSelector = new Dictionary<string, string>
+              //{
+              //    { "kubernetes.azure.com/agentpool", "jobs" }
+              //}
             }
           }
         }

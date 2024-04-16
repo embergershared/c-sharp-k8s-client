@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ListenerAPI.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ListenerAPI.Interfaces
@@ -10,6 +11,6 @@ namespace ListenerAPI.Interfaces
 
         Task<List<string>> GetPodsAsync();
 
-        Task CreateJobAsync(string jobName, string namespaceName);
+        Task<JobCreationResult> CreateJobAsync(string jobName, string namespaceName);
     }
 }

@@ -4,7 +4,7 @@
 
 //namespace ListenerAPI.Interfaces
 //{
-//  public interface ISbSender: IAsyncDisposable
+//  public interface ISbSender : IAsyncDisposable
 //  {
 //    Task SendMessagesAsync(ServiceBusClient sbClient, string queueName, int numOfMessages);
 //  }

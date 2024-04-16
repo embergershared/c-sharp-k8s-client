@@ -113,6 +113,20 @@ Control with:
 
 - Observe the Deployment pods and the user node pool scaling.
 
+12. Tune ASK Cluster autoscaler profile (aggressive scale down profile inspired example)
+
+```
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile scan-interval=15s
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile scale-down-unneeded-time=1m
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile scale-down-unready-time=3m
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile max-graceful-termination-sec=30
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile skip-nodes-with-local-storage=false
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile max-empty-bulk-delete=1000
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile max-total-unready-percentage=100
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile ok-total-unready-count=1000
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile max-node-provision-time=15m
+```
+
 ## Links
 
 Description | Link
@@ -134,3 +148,4 @@ Description | Link
  Azure AD Workload Identity | [Introduction](https://azure.github.io/azure-workload-identity/docs/)
  KEDA Scaling for NET based on Service Bus | [.NET Core worker processing Azure Service Bus Queue scaled by KEDA](https://github.com/kedacore/sample-dotnet-worker-servicebus-queue)
  KEDA sample with AKS Workload Identity | [.NET Core worker processing Azure Service Bus Queue scaled by KEDA with Azure AD Workload Identity](https://github.com/kedacore/sample-dotnet-worker-servicebus-queue/blob/main/workload-identity.md)
+ AKS Autoscaler profile | [Use the cluster autoscaler in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler?tabs=azure-cli#use-the-cluster-autoscaler-profile)

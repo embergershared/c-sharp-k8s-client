@@ -26,6 +26,11 @@ spec:
           #   memory: "128Mi"
           #   cpu: "500m"
         imagePullPolicy: Always
+        env:
+        - name: MessagesTargetQueueName
+          value: "sb-use2-446692-s4-aksafdpls-01/jobrequests"
+        - name: StartMessagesProcessor
+          value: "false"
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         volumeMounts:

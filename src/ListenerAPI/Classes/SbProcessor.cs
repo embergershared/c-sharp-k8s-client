@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using Azure.Messaging.ServiceBus;
-using IdentityModel.OidcClient;
 using ListenerAPI.Constants;
 using ListenerAPI.Helpers;
 using ListenerAPI.Models;
@@ -90,6 +89,12 @@ namespace ListenerAPI.Classes
       receivedMessage.ServiceBusName = StringHelper.RemoveSbSuffix(args.FullyQualifiedNamespace);
 
       _logger.LogInformation("SbProcessor.MessageHandler(): Received the following message: {message}", JsonSerializer.Serialize(receivedMessage));
+
+      // TODO: Do something when the message is received
+
+
+
+
 
       // complete the message. message is deleted from the queue. 
       await args.CompleteMessageAsync(args.Message);

@@ -27,7 +27,7 @@ namespace ListenerAPI.Helpers
               //Const.SbNamesConfigKeyNames
               //  .Where(sb => !string.IsNullOrEmpty(sb)).ToList();
               //  .Select(key => config[key])
-              GetServiceBusName(config, Const.SbProcessorQueueConfigKeyName),
+              //GetServiceBusName(config, Const.SbProcessorQueueConfigKeyName),
               GetServiceBusName(config, Const.SbMessagesTargetConfigKeyName)
             };
 

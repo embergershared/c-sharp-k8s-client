@@ -5,13 +5,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
-using k8s.KubeConfigModels;
 using k8s.Models;
 using ListenerAPI.Constants;
 using ListenerAPI.Helpers;
 using ListenerAPI.Interfaces;
 using ListenerAPI.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -32,30 +30,8 @@ namespace ListenerAPI.Classes
       _config = config;
       CreateClient();
     }
-    private void CreateClient()
-    {
-      var kPath = _config.GetValue<string>("kubeconfigPath");
-      _logger.LogInformation("Found in config: \"kubeconfigPath\": \"{kPath}\"", kPath);
 
-      // Creating the K8S client:
-      // Ref: https://github.com/kubernetes-client/csharp#creating-the-client
-      var k8SClientConfiguration = kPath == null ?
-          // Load from in-cluster configuration:
-          KubernetesClientConfiguration.InClusterConfig() :
-          // Load from the default kubeconfig on the machine.
-          KubernetesClientConfiguration.BuildConfigFromConfigFile(kPath);
-
-      // Use the config object to create a client.
-      try
-      {
-        _k8SClient = new Kubernetes(k8SClientConfiguration);
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError("K8SClient.CreateClient() threw an exception: {ex}", ex.ToString());
-      }
-    }
-
+    #region Interface implementation
     public async Task<List<string>> GetNamespacesAsync()
     {
       if (_k8SClient != null)
@@ -64,7 +40,7 @@ namespace ListenerAPI.Classes
 
         var namespacesList = namespaces.Body.Items.Select(ns => ns.Metadata.Name).ToList();
 
-        _logger.LogInformation("K8SClient.GetNamespacesAsync() returned: {@nsList}", string.Join(", ", [.. namespacesList]));
+        _logger.LogInformation("K8SClient.GetNamespacesAsync() returned: {@nsList}", StringHelper.ListToSeparatedString(namespacesList));
         return namespacesList;
       }
       else
@@ -81,7 +57,7 @@ namespace ListenerAPI.Classes
 
         var podsList = pods.Body.Items.Select(p => p.Metadata.Name).ToList();
 
-        _logger.LogInformation("K8SClient.GetPodsAsync() returned: {@podsList}", string.Join(", ", [.. podsList]));
+        _logger.LogInformation("K8SClient.GetPodsAsync() returned: {@podsList}", StringHelper.ListToSeparatedString(podsList));
         return podsList;
       }
       else
@@ -102,33 +78,67 @@ namespace ListenerAPI.Classes
           var httpResponse = await _k8SClient.BatchV1.CreateNamespacedJobWithHttpMessagesAsync(jobDefinition, namespaceName);
           _logger.LogDebug("CreateNamespacedJobWithHttpMessagesAsync() response was: {@response}", httpResponse.Response);
 
-          jobCreationResult.JobName = jobDefinition.Name();
-          jobCreationResult.JobNamespaceName = namespaceName;
-          jobCreationResult.CreationResult = httpResponse.Response.ReasonPhrase ??= "Error";
-          jobCreationResult.JobCreationTime = httpResponse.Response.Headers.Date;
-          jobCreationResult.JobContainerImage = jobDefinition.Spec.Template.Spec.Containers[0].Image;
-          jobCreationResult.JobNodeSelector = jobDefinition.Spec.Template.Spec.NodeSelector != null ? StringHelper.DictToString(jobDefinition.Spec.Template.Spec.NodeSelector) : "None";
+          if (httpResponse.Response.IsSuccessStatusCode)
+          {
+            jobCreationResult.IsSuccess = true;
+            jobCreationResult.ResultMessage = 
+              $"Successfully created job.batch/{jobDefinition.Metadata.Name}," + 
+              $" in namespace: {namespaceName}," +
+              $" at: {httpResponse.Response.Headers.Date ?? DateTime.Now}," + 
+              $" with image: {jobDefinition.Spec.Template.Spec.Containers[0].Image}," +
+              $" and nodeSelector: {(jobDefinition.Spec.Template.Spec.NodeSelector != null ? StringHelper.DictToString(jobDefinition.Spec.Template.Spec.NodeSelector) : "none")}" +
+              ".";
 
-          _logger.LogInformation("Job created: {jobResult}", JsonSerializer.Serialize(jobCreationResult));
+            _logger.LogInformation("Job created: {jobResult}", JsonSerializer.Serialize(jobCreationResult));
+          }
+          else
+          {
+            var message = $"Job {jobDefinition.Metadata.Name} NOT created: an error happened: {httpResponse.Response.ReasonPhrase}";
+            jobCreationResult.ResultMessage = message;
+
+            _logger.LogError("Job NOT created: an error happened: {message}", message);
+          }
         }
       }
       catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
       {
-        jobCreationResult.JobName = jobDefinition.Name();
-        jobCreationResult.JobNamespaceName = namespaceName;
-        jobCreationResult.CreationResult = "Job NOT created: Duplicate";
+        jobCreationResult.ResultMessage = $"Job {namespaceName}/{jobDefinition.Metadata.Name} already exists => NOT created.";
 
-        _logger.LogError($"Job already exists");
+        _logger.LogWarning("Job NOT created: Duplicate => Job {namespace}/{job} already exists", namespaceName, jobDefinition.Metadata.Name);
       }
       catch (Exception ex)
       {
-        jobCreationResult.JobName = jobDefinition.Name();
-        jobCreationResult.JobNamespaceName = namespaceName;
-        jobCreationResult.CreationResult = $"Error: see log for Exception {ex.Message}";
+        jobCreationResult.ResultMessage = $"Exception occurred: {ex.Message}";
 
         _logger.LogError("Job NOT created: an exception was thrown: {ex}", ex.ToString());
       }
       return jobCreationResult;
+    }
+    #endregion
+
+    #region Private methods
+    private void CreateClient()
+    {
+      var kPath = _config.GetValue<string>("kubeconfigPath");
+      _logger.LogInformation("Found in config: \"kubeconfigPath\": \"{kPath}\"", kPath);
+
+      // Creating the K8S client:
+      // Ref: https://github.com/kubernetes-client/csharp#creating-the-client
+      var k8SClientConfiguration = kPath == null ?
+        // Load from in-cluster configuration:
+        KubernetesClientConfiguration.InClusterConfig() :
+        // Load from the default kubeconfig on the machine.
+        KubernetesClientConfiguration.BuildConfigFromConfigFile(kPath);
+
+      // Use the config object to create a client.
+      try
+      {
+        _k8SClient = new Kubernetes(k8SClientConfiguration);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("K8SClient.CreateClient() threw an exception: {ex}", ex.ToString());
+      }
     }
 
     private static V1Job CreateJobDefinition(string jobName)
@@ -143,6 +153,9 @@ namespace ListenerAPI.Classes
         },
         Spec = new V1JobSpec()
         {
+          BackoffLimit = 1,
+          TtlSecondsAfterFinished = 60,
+          ActiveDeadlineSeconds = 120,
           Template = new V1PodTemplateSpec()
           {
             Spec = new V1PodSpec()
@@ -166,6 +179,19 @@ namespace ListenerAPI.Classes
                       Value = "12"
                     }
                   },
+                  Resources = new V1ResourceRequirements()
+                  {
+                    Requests = new Dictionary<string, ResourceQuantity>
+                    {
+                      { "cpu", new ResourceQuantity("0.5") },
+                      { "memory", new ResourceQuantity("1Gi") }
+                    },
+                    //Limits = new Dictionary<string, ResourceQuantity>
+                    //{
+                    //  { "cpu", new ResourceQuantity("1") },
+                    //  { "memory", new ResourceQuantity("2Gi") }
+                    //}
+                  },  
                   ImagePullPolicy = "Always"
                 }
               },
@@ -181,5 +207,6 @@ namespace ListenerAPI.Classes
       };
       return job;
     }
+    #endregion
   }
 }

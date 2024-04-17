@@ -38,9 +38,8 @@ namespace ListenerAPI.Controllers
             try
             {
               var result = await _k8SClient.CreateJobAsync(jobName, Const.K8SNsName);
-              var jobCreationTime = result.JobCreationTime ?? DateTime.Now;
-                return StatusCode(StatusCodes.Status201Created,
-                  $"Created job.batch/{result.JobName} in namespace {result.JobNamespaceName} at {jobCreationTime} with image {result.JobContainerImage} and nodeSelector {result.JobNodeSelector}");
+
+              return StatusCode(result.IsSuccess ? StatusCodes.Status201Created : StatusCodes.Status400BadRequest, result.ResultMessage);
             }
             catch (Exception ex)
             {

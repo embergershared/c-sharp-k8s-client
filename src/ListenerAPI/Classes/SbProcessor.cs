@@ -39,7 +39,7 @@ namespace ListenerAPI.Classes
       _logger = logger;
       _sbClientFactory = sbClientFactory ?? throw new ArgumentNullException(nameof(sbClientFactory));
       _mapper = mapper;
-      _queue = new SbNsQueue(config, Const.SbMessagesTargetConfigKeyName);
+      _queue = new SbNsQueue(config, ConfigKey.SbNsQueueName);
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

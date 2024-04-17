@@ -250,7 +250,7 @@ namespace ListenerAPI.Classes
       // Query the available queues for the Service Bus namespace.
       var adminClient = new ServiceBusAdministrationClient
       ($"{serviceBusName}{Const.SbPublicSuffix}",
-        AzureCreds.GetCred(_config.GetValue<string>(Const.AzureIdentityPreferredConfigKeyName))
+        AzureCreds.GetCred(_config.GetValue<string>(ConfigKey.AzureIdentityPreferredAuthProfile))
       );
       var queueNames = new List<string>();
 

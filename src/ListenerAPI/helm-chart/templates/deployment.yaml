@@ -14,34 +14,29 @@ spec:
         app: {{ include "listener.fullname" . }}-listener
     spec:
       nodeSelector:
-        "{{ .Values.nodeSelector.key }}": {{ .Values.nodeSelector.value }}
+        "{{ .Values.listener.nodeSelector.key }}": {{ .Values.listener.nodeSelector.value }}
       containers:
       - name: listener
-        image: {{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}
+        image: {{ .Values.repository }}/{{ .Values.listener.image.name }}:{{ .Values.listener.image.tag }}
         resources:
           requests:
-            memory: "{{ .Values.resourcesRequests.memory }}"
-            cpu: "{{ .Values.resourcesRequests.cpu }}"
-          # limits:
-          #   memory: "128Mi"
-          #   cpu: "500m"
+            memory: "{{ .Values.listener.resourcesRequests.memory }}"
+            cpu: "{{ .Values.listener.resourcesRequests.cpu }}"
         imagePullPolicy: Always
-        env:
-        - name: AzSbNsQueueName
-          value: {{ .Values.serviceBus.namespace }}/{{ .Values.serviceBus.queue }}
-        - name: StartMessagesProcessor
-          value: "{{ .Values.serviceBus.startMessageProcessor }}"
+        envFrom:
+        - configMapRef:
+            name: {{ include "listener.fullname" . }}-cm
         ports:
-        - containerPort: {{ .Values.service.targetPort }}
+        - containerPort: {{ .Values.listener.service.targetPort }}
         volumeMounts:
         - name: azure-file
-          mountPath: /mnt/{{ .Values.azureFile.shareName }}
+          mountPath: /mnt/{{ .Values.listener.azureFile.shareName }}
           readOnly: false
       volumes:
         - name: azure-file
           csi:
             driver: file.csi.azure.com
             volumeAttributes:
-              shareName: {{ .Values.azureFile.shareName }}
-              secretName: {{ .Values.azureFile.storageAccountName }}-secret
+              shareName: {{ .Values.listener.azureFile.shareName }}
+              secretName: {{ .Values.listener.azureFile.storageAccountName }}-secret
               mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30,nosharesock"  # optional

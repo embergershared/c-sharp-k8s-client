@@ -4,33 +4,41 @@
 # The values commented are set with non git checked-in value file. They are required.
 # Chart deployment is done with the following command:
 # `helm install listener ./helm-chart --namespace bases-jet --create-namespace --values ./helm-chart/values-secret.yaml`
-  
 
-replicaCount: 1
-image:
-  name: bases-jet/listenerapi
-  tag: dev
 #  repository:
 
-service:
-  type: LoadBalancer
-  port: 80
-  targetPort: 8080
+listener:
+  replicaCount: 1
+  image:
+    name: bases-jet/listenerapi
+    tag: dev
+  resourcesRequests:
+    memory: 512Mi
+    cpu: 500m
+  nodeSelector:
+    key: "kubernetes.azure.com/mode"
+    value: "user"
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8080
+  # azureFile:
+  #   storageAccountName:
+  #   storageAccountKey:
+  #   shareName:
+  # serviceBus:
+  #   namespace:
+  #   queue:
+  #   startMessageProcessor:
+  #   kedaUaiClientId:
 
-# azureFile:
-#   storageAccountName:
-#   storageAccountKey:
-#   shareName:
-
-# servicebus:
-#   namespace:  
-#   queue:
-#   startmessageprocessor: false
-
-# resourcesRequests:
-#     memory:
-#     cpu:
-
-# nodeSelector:
-#     key:
-#     value:
+jobs:
+  image:
+    name: bases-jet/jobworker
+    tag: dev
+  resourcesRequests:
+    memory: 512Mi
+    cpu: 500m
+  nodeSelector:
+    key: "kubernetes.azure.com/mode"
+    value: "user"

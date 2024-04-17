@@ -66,7 +66,7 @@ namespace ListenerAPI.Classes
       }
     }
 
-    public async Task<JobCreationResult> CreateJobAsync(string jobName, string namespaceName = "default")
+    public async Task<JobCreationResult> CreateJobAsync(string jobName, string? namespaceName = "default")
     {
       var jobCreationResult = new JobCreationResult();
       var jobDefinition = CreateJobDefinition(jobName);
@@ -141,7 +141,7 @@ namespace ListenerAPI.Classes
       }
     }
 
-    private static V1Job CreateJobDefinition(string jobName)
+    private V1Job CreateJobDefinition(string jobName)
     {
       var job = new V1Job()
       {
@@ -149,13 +149,13 @@ namespace ListenerAPI.Classes
         Kind = "Job",
         Metadata = new V1ObjectMeta()
         {
-            Name = Const.JobsPrefix + jobName
+            Name = $"{_config.GetValue<string>(ConfigKey.JobsPrefix)}-{jobName}"
         },
         Spec = new V1JobSpec()
         {
           BackoffLimit = 1,
-          TtlSecondsAfterFinished = 60,
-          ActiveDeadlineSeconds = 120,
+          TtlSecondsAfterFinished = _config.GetValue<int>(ConfigKey.JobsTtlAfterFinished),
+          ActiveDeadlineSeconds = _config.GetValue<int>(ConfigKey.JobsActiveDeadline),
           Template = new V1PodTemplateSpec()
           {
             Spec = new V1PodSpec()
@@ -164,8 +164,8 @@ namespace ListenerAPI.Classes
               {
                 new()
                 {
-                  Name = "jet-worker",
-                  Image = "acruse2446692s1hubsharedsvc.azurecr.io/bases-jet/jobworker:dev",
+                  Name = Const.JobsContainerName,
+                  Image = $"{_config.GetValue<string>(ConfigKey.JobsRepository)}/{_config.GetValue<string>(ConfigKey.JobsImageName)}:{_config.GetValue<string>(ConfigKey.JobsImageTag)}",
                   Env = new List<V1EnvVar>()
                   {
                     new()
@@ -183,14 +183,9 @@ namespace ListenerAPI.Classes
                   {
                     Requests = new Dictionary<string, ResourceQuantity>
                     {
-                      { "cpu", new ResourceQuantity("0.5") },
-                      { "memory", new ResourceQuantity("1Gi") }
+                      { "cpu", new ResourceQuantity(_config.GetValue<string>(ConfigKey.JobsCpuRequest)) },
+                      { "memory", new ResourceQuantity(_config.GetValue<string>(ConfigKey.JobsMemoryRequest)) }
                     },
-                    //Limits = new Dictionary<string, ResourceQuantity>
-                    //{
-                    //  { "cpu", new ResourceQuantity("1") },
-                    //  { "memory", new ResourceQuantity("2Gi") }
-                    //}
                   },  
                   ImagePullPolicy = "Always"
                 }
@@ -198,8 +193,8 @@ namespace ListenerAPI.Classes
               RestartPolicy = "Never",
               NodeSelector = new Dictionary<string, string>
               {
-              //    { "kubernetes.azure.com/agentpool", "jobs" }
-                  { "kubernetes.azure.com/mode", "user" }
+                { _config.GetValue<string>(ConfigKey.JobsNodeSelKey)   ?? "kubernetes.azure.com/mode",
+                  _config.GetValue<string>(ConfigKey.JobsNodeSelValue) ?? "user" }
               }
             }
           }

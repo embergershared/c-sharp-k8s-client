@@ -11,5 +11,4 @@ echo http://$IP/
 3. Use HTTP REST with browser:
   - List namespaces:  curl http://$IP/api/namespaces
   - List pods:        curl http://$IP/api/pods
-  - Create a job:
-                      curl -X POST -i http://$IP/api/Jobs?jobName=test-job
+  - Create a job:     curl -X POST -i http://$IP/api/Jobs?jobName=test-job

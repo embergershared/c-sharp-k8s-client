@@ -59,7 +59,7 @@ namespace ListenerAPI
       });
 
       // Add Service Bus Processor background service
-      if (builder.Configuration.GetValue<bool>(Const.SbProcessorStartConfigKeyName))
+      if (builder.Configuration.GetValue<bool>(ConfigKey.SbProcessorIsUsed))
       {
         builder.Services.AddHostedService<SbProcessor>();
       }
@@ -74,7 +74,7 @@ namespace ListenerAPI
       EnforceTls12();
       builder.Services.AddAzureClients(clientBuilder =>
       {
-        clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration[Const.AzureIdentityPreferredConfigKeyName]));
+        clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration[ConfigKey.AzureIdentityPreferredAuthProfile]));
 
         // Create a dumb default client to avoid queues controller crash at creation (so we can send a 404)
         clientBuilder.AddServiceBusClientWithNamespace($"dumb{Const.SbPublicSuffix}");

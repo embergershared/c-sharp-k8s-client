@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "listener.fullname" . }}-cm
+  namespace: {{ .Release.Namespace }}
+data:
+  AzSbNsQueueName: {{ .Values.listener.serviceBus.namespace }}/{{ .Values.listener.serviceBus.queue }}
+  StartMessagesProcessor: "{{ .Values.listener.serviceBus.startMessageProcessor }}"
+  JobsNamespace: "bases-jet"
+  JobsPrefix: "azure-dev"
+  JobsRepository: {{ .Values.repository }}
+  JobsImageName: {{ .Values.jobs.image.name }}
+  JobsImageTag: {{ .Values.jobs.image.tag }}
+  JobsCpuRequest: "0.5"
+  JobsMemoryRequest: "1Gi"
+  JobsNodeSelectorKey: {{ .Values.jobs.nodeSelector.key }}
+  JobsNodeSelectorValue: {{ .Values.jobs.nodeSelector.value }}
+  JobsTtlAfterFinished: "60"
+  JobsActiveDeadline: "900"

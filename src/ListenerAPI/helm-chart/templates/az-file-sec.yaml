@@ -1,9 +1,9 @@
 kind: Secret
 apiVersion: v1
 metadata:
-  name: {{ .Values.azureFile.storageAccountName }}-secret
+  name: {{ .Values.listener.azureFile.storageAccountName }}-secret
   namespace: {{ .Release.Namespace }}
 data:
-  azurestorageaccountname: {{ .Values.azureFile.storageAccountName | b64enc }}
-  azurestorageaccountkey: {{ .Values.azureFile.storageAccountKey | b64enc }}
+  azurestorageaccountname: {{ .Values.listener.azureFile.storageAccountName | b64enc }}
+  azurestorageaccountkey: {{ .Values.listener.azureFile.storageAccountKey | b64enc }}
 type: Opaque

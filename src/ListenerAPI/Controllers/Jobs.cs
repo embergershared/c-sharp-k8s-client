@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace ListenerAPI.Controllers
 {
@@ -14,13 +15,16 @@ namespace ListenerAPI.Controllers
     {
         private readonly ILogger<Jobs> _logger;
         private readonly IK8SClient _k8SClient;
+        private readonly IConfiguration _config;
 
         public Jobs(
             ILogger<Jobs> logger,
+            IConfiguration config,
             IK8SClient k8SClient
         )
         {
             _logger = logger;
+            _config = config;
             _k8SClient = k8SClient;
             _logger.LogInformation("Controllers/Jobs constructed");
         }
@@ -37,7 +41,7 @@ namespace ListenerAPI.Controllers
 
             try
             {
-              var result = await _k8SClient.CreateJobAsync(jobName, Const.K8SNsName);
+              var result = await _k8SClient.CreateJobAsync(jobName, _config.GetValue<string>(ConfigKey.JobsNamespace));
 
               return StatusCode(result.IsSuccess ? StatusCodes.Status201Created : StatusCodes.Status400BadRequest, result.ResultMessage);
             }

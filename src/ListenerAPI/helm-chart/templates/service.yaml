@@ -4,9 +4,9 @@ metadata:
   name: {{ include "listener.fullname" . }}-svc
   namespace: {{ .Release.Namespace }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.listener.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
+    - port: {{ .Values.listener.service.port }}
+      targetPort: {{ .Values.listener.service.targetPort }}
   selector:
     app: {{ include "listener.fullname" . }}-listener

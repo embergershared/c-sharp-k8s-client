@@ -1,15 +1,15 @@
-1. Get the Service External-IP by executing:
-IP=$(kubectl get service/{{ include "listener.fullname" . }}-svc -n {{ .Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+####  How to use the listener  ####
+(PowerShell code)
 
-2. Call the Swagger UI:
-- With Swagger Web UI: `http://$IP/swagger/index.html`
-echo http://$IP/swagger/index.html
+1. Get the Service External-IP by executing:
+$IP=$(kubectl get service/{{ include "listener.fullname" . }}-svc -n {{ .Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+2. Launch the WebUI:
+echo http://$IP/
+    Note: The Swagger UI is here: http://$IP/apiui/index.html
 
 3. Use HTTP REST with browser:
-- List namespaces: `http://$IP/api/namespaces`
-- List pods: `http://$IP/api/pods`
-- Create a job:
-  curl -X 'POST' \
-  '<http://$IP/api/Jobs>' \
-  -H 'Content-Type: application/json' \
-  -d '"job45"'
+  - List namespaces:  curl http://$IP/api/namespaces
+  - List pods:        curl http://$IP/api/pods
+  - Create a job:
+                      curl -X POST -i http://$IP/api/Jobs?jobName=test-job

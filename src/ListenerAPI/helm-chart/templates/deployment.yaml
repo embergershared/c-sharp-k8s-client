@@ -14,23 +14,23 @@ spec:
         app: {{ include "listener.fullname" . }}-listener
     spec:
       nodeSelector:
-        "kubernetes.azure.com/mode": user
+        "{{ .Values.nodeSelector.key }}": {{ .Values.nodeSelector.value }}
       containers:
       - name: listener
         image: {{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "{{ .Values.resourcesRequests.memory }}"
+            cpu: "{{ .Values.resourcesRequests.cpu }}"
           # limits:
           #   memory: "128Mi"
           #   cpu: "500m"
         imagePullPolicy: Always
         env:
-        - name: MessagesTargetQueueName
-          value: "sb-use2-446692-s4-aksafdpls-01/jobrequests"
+        - name: AzSbNsQueueName
+          value: {{ .Values.serviceBus.namespace }}/{{ .Values.serviceBus.queue }}
         - name: StartMessagesProcessor
-          value: "false"
+          value: "{{ .Values.serviceBus.startMessageProcessor }}"
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         volumeMounts:

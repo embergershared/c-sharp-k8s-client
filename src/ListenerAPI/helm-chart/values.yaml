@@ -1,6 +1,10 @@
 # Default values for listener.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+# The values commented are set with non git checked-in value file. They are required.
+# Chart deployment is done with the following command:
+# `helm install listener ./helm-chart --namespace bases-jet --create-namespace --values ./helm-chart/values-secret.yaml`
+  
 
 replicaCount: 1
 image:
@@ -17,3 +21,16 @@ service:
 #   storageAccountName:
 #   storageAccountKey:
 #   shareName:
+
+# servicebus:
+#   namespace:  
+#   queue:
+#   startmessageprocessor: false
+
+# resourcesRequests:
+#     memory:
+#     cpu:
+
+# nodeSelector:
+#     key:
+#     value:

@@ -93,7 +93,7 @@ Set the value for `listener.serviceBus.listenerUaiClientId` with the `$USER_ASSI
 5. Deploy the updated Helm chart, to create the service account and update the listener pod
 
 ```powershell
-helm upgrade listener ./helm-chart --namespace bases-jet --values ./helm-chart/values-secret.yaml
+helm upgrade listener ./helm-chart --namespace $SERVICE_ACCOUNT_NAMESPACE --values ./helm-chart/values-secret.yaml
 ```
 
 6. Create a Federated credential for the Workload Identity service account

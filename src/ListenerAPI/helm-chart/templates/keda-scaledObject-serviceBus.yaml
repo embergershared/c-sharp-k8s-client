@@ -1,3 +1,4 @@
+{{ if .Values.listener.serviceBus.useKedaAutoScaler }}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
@@ -34,3 +35,4 @@ spec:
       cloud: AzurePublicCloud # Optional. Default: AzurePublicCloud
     authenticationRef:
         name: azure-servicebus-auth # authenticationRef would need either podIdentity or define a connection parameter
+{{ end }}

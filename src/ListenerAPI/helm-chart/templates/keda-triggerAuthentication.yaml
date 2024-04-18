@@ -1,3 +1,4 @@
+{{ if .Values.listener.serviceBus.useKedaAutoScaler }}
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
@@ -7,3 +8,4 @@ spec:
   podIdentity:
     provider: azure-workload # azure | azure-workload
     identityId: {{ .Values.listener.serviceBus.kedaUaiClientId }}
+{{ end }}

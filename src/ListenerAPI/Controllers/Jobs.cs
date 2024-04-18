@@ -34,7 +34,6 @@ namespace ListenerAPI.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-
         public async Task<ActionResult<string>> PostCreateJob(string jobName)
         {
             _logger.LogInformation("HTTP POST /api/Jobs called");
@@ -52,6 +51,5 @@ namespace ListenerAPI.Controllers
                                        "Error creating the job");
             }
         }
-
     }
 }

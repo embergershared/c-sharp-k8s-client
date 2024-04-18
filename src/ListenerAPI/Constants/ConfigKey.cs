@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace ListenerAPI.Constants
+﻿namespace ListenerAPI.Constants
 {
   public class ConfigKey
   {

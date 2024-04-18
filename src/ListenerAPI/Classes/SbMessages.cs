@@ -36,15 +36,27 @@ namespace ListenerAPI.Classes
       _mapper = mapper;
     }
 
+    #region Interface implementation
     // Send X messages in a batch to all queue(s) in 1 Service Bus namespace
-    //public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(int messagesCount, string sbName, List<Task<int>> tasks)
-    //{
-    //  _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, sendTasksList) called", messagesCount, sbName);
+    public bool AddSendMessagesTo1Ns1QueueTask(JobRequest jobRequest, List<Task<int>> sendTasksList)
+    {
+      if (jobRequest.SbNsQueue == null)
+      {
+        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: No Service Bus Namespace & queue provided");
+        return false;
+      }
 
-    //  var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
-    //  tasks.AddRange(queuesNames.Select(queue =>
-    //    SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), messagesCount)));
-    //}
+      try
+      {
+        sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(jobRequest.SbNsQueue.SbNamespace).CreateSender(jobRequest.SbNsQueue.QueueName), jobRequest));
+        return true;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
+        return false;
+      }
+    }
     public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(JobRequest jobRequest, string sbName, List<Task<int>> tasks)
     {
       _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({jobRequest}, {sbName}, sendTasksList) called", jobRequest, sbName);
@@ -53,40 +65,73 @@ namespace ListenerAPI.Classes
       tasks.AddRange(queuesNames.Select(queue =>
         SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), jobRequest)));
     }
+    
+    // Receive X messages in a batch from all queue(s) in 1 Service Bus namespace
+    public async Task AddReceiveMessagesBatchesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
+    {
+      _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
 
-    //private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, int value)
-    //{
-    //  _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {messagesCount}) called", sender.Identifier, value);
+      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
+      tasks.AddRange(queuesNames.Select(queue =>
+        ReceiveMessageBatchFromQueueAsync(_sbClientFactory.CreateClient(sbName).CreateReceiver(queue), batchSize)
+      ));
+    }
 
-    //  // create a batch to send multiple messages
-    //  using var messageBatch = await sender.CreateMessageBatchAsync();
+    // Delete all messages from all queue(s) in 1 Service Bus namespace
+    public bool AddDeleteAllMessagesFrom1Ns1QueueTask(string sbName, string qName, List<Task<int>> tasks)
+    {
+      try
+      {
+        tasks.Add(DeleteAllMessagesAsync(sbName, qName));
+        return true;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Error adding AddDeleteAllMessagesFrom1Ns1QueueTask task: {ex}", ex);
+        return false;
+      }
+    }
+    public async Task AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<int>> tasks)
+    {
+      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
 
-    //  for (var i = 1; i <= value; i++)
-    //  {
-    //    // try adding a message to the batch
-    //    if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Body of message {i}.")))
-    //    {
-    //      // if it is too large for the batch
-    //      throw new Exception($"The message {i} is too large to fit in the batch.");
-    //    }
-    //  }
+      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
+      tasks.AddRange(queuesNames.Select(queue => DeleteAllMessagesAsync(sbName, queue)));
+    }
 
-    //  try
-    //  {
-    //    {
-    //      await sender.SendMessagesAsync(messageBatch);
+    public ValueTask DisposeAsync()
+    {
+      _logger.LogDebug("SbMessages.DisposeAsync() called");
 
-    //      return value;
-    //    }
-    //  }
-    //  catch (Exception ex)
-    //  {
-    //    _logger.LogError("Called failed with exception: {ex}", ex);
+      GC.SuppressFinalize(this);
 
-    //    return -1;
-    //  }
-    //}
+      return new ValueTask(Task.CompletedTask);
+    }
+    #endregion
 
+    #region Private Methods
+    // Get all queue(s) in 1 Service Bus namespace
+    private async Task<List<string>> GetAllQueuesNamesIn1NsAsync(string serviceBusName)
+    {
+      _logger.LogDebug("SbMessages.GetAllQueuesNamesIn1NsAsync({serviceBusName}) called", serviceBusName);
+
+      // Query the available queues for the Service Bus namespace.
+      var adminClient = new ServiceBusAdministrationClient
+      ($"{serviceBusName}{Const.SbPublicSuffix}",
+        AzureCreds.GetCred(_config.GetValue<string>(ConfigKey.AzureIdentityPreferredAuthProfile))
+      );
+      var queueNames = new List<string>();
+
+      // Because the result is async, the queue names need to be captured
+      // to a standard list to avoid async calls when registering. Failure to
+      // do so results in an error with the services collection.
+      await foreach (var queue in adminClient.GetQueuesAsync())
+      {
+        queueNames.Add(queue.Name);
+      }
+
+      return queueNames;
+    }
     private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, JobRequest jobRequest)
     {
       _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {jobRequest}) called", sender.Identifier, jobRequest.ToString());
@@ -140,17 +185,6 @@ namespace ListenerAPI.Classes
         return -1;
       }
     }
-
-    // Receive X messages in a batch from all queue(s) in 1 Service Bus namespace
-    public async Task AddReceiveMessagesBatchesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<IReadOnlyList<ReceivedMessage>>> tasks, int batchSize = 1)
-    {
-      _logger.LogDebug("SbMessages.AddReceiveMessageFromQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
-
-      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
-      tasks.AddRange(queuesNames.Select(queue =>
-        ReceiveMessageBatchFromQueueAsync(_sbClientFactory.CreateClient(sbName).CreateReceiver(queue), batchSize)
-      ));
-    }
     private async Task<IReadOnlyList<ReceivedMessage>> ReceiveMessageBatchFromQueueAsync(ServiceBusReceiver receiver, int batchSize = 1)
     {
       _logger.LogDebug("SbMessages.ReceiveMessageBatchFromQueueAsync({receiver}, {size}) called", receiver.Identifier, batchSize);
@@ -194,15 +228,6 @@ namespace ListenerAPI.Classes
       }
 
       return messages;
-    }
-    
-    // Delete all messages from all queue(s) in 1 Service Bus namespace
-    public async Task AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync(string sbName, List<Task<int>> tasks)
-    {
-      _logger.LogDebug("SbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync({sbName}, sendTasksList) called", sbName);
-
-      var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
-      tasks.AddRange(queuesNames.Select(queue => DeleteAllMessagesAsync(sbName, queue)));
     }
     private async Task<int> DeleteAllMessagesAsync(string sbName, string queue)
     {
@@ -250,86 +275,6 @@ namespace ListenerAPI.Classes
 
       return deletedMessages;
     }
-
-    // Get all queue(s) in 1 Service Bus namespace
-    private async Task<List<string>> GetAllQueuesNamesIn1NsAsync(string serviceBusName)
-    {
-      _logger.LogDebug("SbMessages.GetAllQueuesNamesIn1NsAsync({serviceBusName}) called", serviceBusName);
-
-      // Query the available queues for the Service Bus namespace.
-      var adminClient = new ServiceBusAdministrationClient
-      ($"{serviceBusName}{Const.SbPublicSuffix}",
-        AzureCreds.GetCred(_config.GetValue<string>(ConfigKey.AzureIdentityPreferredAuthProfile))
-      );
-      var queueNames = new List<string>();
-
-      // Because the result is async, the queue names need to be captured
-      // to a standard list to avoid async calls when registering. Failure to
-      // do so results in an error with the services collection.
-      await foreach (var queue in adminClient.GetQueuesAsync())
-      {
-        queueNames.Add(queue.Name);
-      }
-
-      return queueNames;
-    }
-    
-    public ValueTask DisposeAsync()
-    {
-      _logger.LogDebug("SbMessages.DisposeAsync() called");
-
-      GC.SuppressFinalize(this);
-
-      return new ValueTask(Task.CompletedTask);
-    }
-
-    //public bool AddSendMessagesTo1Ns1QueueTask(string sbName, string qName, int messagesCount, List<Task<int>> sendTasksList)
-    //{
-    //  try
-    //  {
-    //    sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
-    //    return true;
-    //  }
-    //  catch (Exception ex)
-    //  {
-    //    _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
-    //    return false;
-    //  }
-    //}
-
-    public bool AddSendMessagesTo1Ns1QueueTask(JobRequest jobRequest, List<Task<int>> sendTasksList)
-    {
-      if (jobRequest.SbNsQueue == null)
-      {
-        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: No Service Bus Namespace & queue provided");
-        return false;
-      }
-
-      try
-      {
-        sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(jobRequest.SbNsQueue.SbNamespace).CreateSender(jobRequest.SbNsQueue.QueueName), jobRequest));
-        return true;
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
-        return false;
-      }
-    }
-
-
-    public bool AddDeleteAllMessagesFrom1Ns1QueueTask(string sbName, string qName, List<Task<int>> tasks)
-    {
-      try
-      {
-        tasks.Add(DeleteAllMessagesAsync(sbName, qName));
-        return true;
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError("Error adding AddDeleteAllMessagesFrom1Ns1QueueTask task: {ex}", ex);
-        return false;
-      }
-    }
+    #endregion
   }
 }

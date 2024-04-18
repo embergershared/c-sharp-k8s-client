@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -194,8 +193,7 @@ namespace ListenerAPI.Controllers
       }
     }
 
-
-    // Trace Controller disposal
+    // Trace Controller disposition
     protected override void Dispose(bool disposing)
     {
       _logger.LogDebug("Messages.Dispose() called");

@@ -42,6 +42,7 @@ namespace ListenerAPI.Classes
       _queue = new SbNsQueue(config, ConfigKey.SbNsQueueName);
     }
 
+    #region Interface implementation
     public async Task StartAsync(CancellationToken cancellationToken)
     {
       _logger.LogDebug("SbProcessor.StartAsync() called.");
@@ -65,19 +66,18 @@ namespace ListenerAPI.Classes
 
       _logger.LogDebug("SbProcessor.StartAsync() finished.");
     }
-
     public Task StopAsync(CancellationToken cancellationToken)
     {
       _logger.LogDebug("SbProcessor.StopAsync() called.");
       return Task.CompletedTask;
     }
-
     public async void Dispose()
     {
       _logger.LogDebug("SbProcessor.Dispose() called.");
       if (_processor != null) await _processor.DisposeAsync();
       GC.SuppressFinalize(this);
     }
+    #endregion
 
     #region Private Methods
     // handle received messages

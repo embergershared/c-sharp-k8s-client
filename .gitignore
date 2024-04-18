@@ -642,3 +642,4 @@ FodyWeavers.xsd
 src/ListenerAPI/appsettings.Development.json
 src/ListenerAPI/update-acr-image.txt
 src/ListenerAPI/update-acr-image.ps1
+src/ListenerAPI/k8s/**

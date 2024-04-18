@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Azure.Identity;
+﻿using Azure.Identity;
 
 namespace ListenerAPI.Helpers
 {

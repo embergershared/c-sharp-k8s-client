@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ListenerAPI.Models
+﻿namespace ListenerAPI.Models
 {
   public class JobCreationResult
   {

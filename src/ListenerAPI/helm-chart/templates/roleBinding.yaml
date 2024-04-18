@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: {{ .Values.listener.k8sServiceAccountName }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role

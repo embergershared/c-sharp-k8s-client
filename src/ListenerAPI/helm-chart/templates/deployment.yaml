@@ -14,7 +14,7 @@ spec:
         app: {{ include "listener.fullname" . }}-listener
         azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: listener-service-account
+      serviceAccountName: {{ .Values.listener.k8sServiceAccountName }}
       nodeSelector:
         "{{ .Values.listener.nodeSelector.key }}": {{ .Values.listener.nodeSelector.value }}
       containers:

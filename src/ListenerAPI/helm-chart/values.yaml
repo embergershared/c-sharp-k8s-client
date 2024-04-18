@@ -9,6 +9,7 @@
 
 listener:
   replicaCount: 1
+  k8sServiceAccountName: listener-service-account
   image:
     name: bases-jet/listenerapi
     tag: dev

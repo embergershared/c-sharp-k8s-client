@@ -37,46 +37,55 @@ namespace ListenerAPI.Classes
     }
 
     // Send X messages in a batch to all queue(s) in 1 Service Bus namespace
-    public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(int messagesCount, string sbName, List<Task<int>> tasks)
+    //public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(int messagesCount, string sbName, List<Task<int>> tasks)
+    //{
+    //  _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, sendTasksList) called", messagesCount, sbName);
+
+    //  var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
+    //  tasks.AddRange(queuesNames.Select(queue =>
+    //    SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), messagesCount)));
+    //}
+    public async Task AddSendMessagesTo1NsAllQueuesTasksAsync(JobRequest jobRequest, string sbName, List<Task<int>> tasks)
     {
-      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({messagesCount}, {sbName}, sendTasksList) called", messagesCount, sbName);
+      _logger.LogDebug("SbMessages.AddSenderToQueuesTasks({jobRequest}, {sbName}, sendTasksList) called", jobRequest, sbName);
 
       var queuesNames = await GetAllQueuesNamesIn1NsAsync(sbName);
       tasks.AddRange(queuesNames.Select(queue =>
-        SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), messagesCount)));
+        SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(queue), jobRequest)));
     }
-    private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, int value)
-    {
-      _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {messagesCount}) called", sender.Identifier, value);
 
-      // create a batch to send multiple messages
-      using var messageBatch = await sender.CreateMessageBatchAsync();
+    //private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, int value)
+    //{
+    //  _logger.LogDebug("SbMessages.SendMessageBatchToQueueAsync({sender}, {messagesCount}) called", sender.Identifier, value);
 
-      for (var i = 1; i <= value; i++)
-      {
-        // try adding a message to the batch
-        if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Body of message {i}.")))
-        {
-          // if it is too large for the batch
-          throw new Exception($"The message {i} is too large to fit in the batch.");
-        }
-      }
+    //  // create a batch to send multiple messages
+    //  using var messageBatch = await sender.CreateMessageBatchAsync();
 
-      try
-      {
-        {
-          await sender.SendMessagesAsync(messageBatch);
+    //  for (var i = 1; i <= value; i++)
+    //  {
+    //    // try adding a message to the batch
+    //    if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Body of message {i}.")))
+    //    {
+    //      // if it is too large for the batch
+    //      throw new Exception($"The message {i} is too large to fit in the batch.");
+    //    }
+    //  }
 
-          return value;
-        }
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError("Called failed with exception: {ex}", ex);
+    //  try
+    //  {
+    //    {
+    //      await sender.SendMessagesAsync(messageBatch);
 
-        return -1;
-      }
-    }
+    //      return value;
+    //    }
+    //  }
+    //  catch (Exception ex)
+    //  {
+    //    _logger.LogError("Called failed with exception: {ex}", ex);
+
+    //    return -1;
+    //  }
+    //}
 
     private async Task<int> SendMessageBatchToQueueAsync(ServiceBusSender sender, JobRequest jobRequest)
     {
@@ -274,22 +283,28 @@ namespace ListenerAPI.Classes
       return new ValueTask(Task.CompletedTask);
     }
 
-    public bool AddSendMessagesTo1Ns1QueueTask(string sbName, string qName, int messagesCount, List<Task<int>> sendTasksList)
-    {
-      try
-      {
-        sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
-        return true;
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
-        return false;
-      }
-    }
+    //public bool AddSendMessagesTo1Ns1QueueTask(string sbName, string qName, int messagesCount, List<Task<int>> sendTasksList)
+    //{
+    //  try
+    //  {
+    //    sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(sbName).CreateSender(qName), messagesCount));
+    //    return true;
+    //  }
+    //  catch (Exception ex)
+    //  {
+    //    _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: {ex}", ex);
+    //    return false;
+    //  }
+    //}
 
     public bool AddSendMessagesTo1Ns1QueueTask(JobRequest jobRequest, List<Task<int>> sendTasksList)
     {
+      if (jobRequest.SbNsQueue == null)
+      {
+        _logger.LogError("Error adding AddSendMessagesTo1Ns1QueueTask task: No Service Bus Namespace & queue provided");
+        return false;
+      }
+
       try
       {
         sendTasksList.Add(SendMessageBatchToQueueAsync(_sbClientFactory.CreateClient(jobRequest.SbNsQueue.SbNamespace).CreateSender(jobRequest.SbNsQueue.QueueName), jobRequest));

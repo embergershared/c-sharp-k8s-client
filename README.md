@@ -28,13 +28,99 @@ The process is represented by this UML Sequence diagram to create `jobs`:
 ## Azure Service Bus Messages trigger
 
 The above feature works with a `HTTP(S) POST` on `api/Jobs`(the **Job controller**) with a job name parameter.
-It then creates a Kubernetes job: it creates a pod from the job image and run it until completed.
+It then creates a Kubernetes job: a pod built with the job image and run it until completed.
 
 An additional requirement was added to trigger a job from a `received Azure Service Bus Message`.
 To do that, the following has been added:
 
 - a `api/Messages` Controller to Create and Delete Service Bus Messages,
 - a `SbProcessor` Background task that listens to messages. It could then create Jobs based on the message (code is not implemented), and it can be turned `ON`/`OFF`.
+
+### Setup
+
+0. Set few variables values
+
+```powershell
+$RESOURCE_GROUP=""
+$LOCATION=""
+$SUBSCRIPTION="$(az account show --query id --output tsv)"
+$USER_ASSIGNED_IDENTITY_NAME="uai-listener-asb"
+$SERVICE_ACCOUNT_NAMESPACE="bases-jet"
+$SERVICE_ACCOUNT_NAME="listener-service-account"
+$FEDERATED_IDENTITY_CREDENTIAL_NAME="listenerFedIdentity" 
+$AKS_CLUSTER_NAME=""
+$SERVICE_BUS_QUEUE_ID=""
+```
+
+To secure access to the Service Bus for the listener, we use the [`Workload Identity feature`](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) that the listener pod will use to access the Service Bus queue, following this setup (inspired by this tutorial [Use a workload identity with an application on Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/learn/tutorial-kubernetes-workload-identity)):
+
+1. Enable Workload Identity and OIDC on AKS
+
+```powershell
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer`
+```
+
+> Store the OIDC issuer URL:
+
+```powershell
+$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
+```
+
+2. Create a Workload Identity that the Listener will use to access the Service Bus queue
+
+```powershell
+az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION`
+```
+
+> Store the client ID:
+
+```powershell
+$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"
+```
+
+3. Create the 2 role assignments for the Listener Workload Identity to access the Service Bus & Manage the queue
+
+```powershell
+$SERVICE_BUS_ID = $SERVICE_BUS_QUEUE_ID -split '/queues', 2 | Select-Object -First 1
+az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Reader" --scope $SERVICE_BUS_ID
+az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Owner" --scope $SERVICE_BUS_QUEUE_ID
+```
+
+4. Update the Helm chart `values.yaml`
+
+Set the value for `listener.serviceBus.listenerUaiClientId` with the `$USER_ASSIGNED_CLIENT_ID`.
+
+5. Deploy the updated Helm chart, to create the service account and update the listener pod
+
+```powershell
+helm upgrade listener ./helm-chart --namespace $SERVICE_ACCOUNT_NAMESPACE --values ./helm-chart/values-secret.yaml
+```
+
+6. Create a Federated credential for the Workload Identity service account
+
+```powershell
+az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME} --audience api://AzureADTokenExchange
+```
+
+7. Test
+
+- Create messages:
+
+```powershell
+$body = @{
+    jobName = "test-job"
+    messagesToCreateCount = 15
+} | ConvertTo-Json
+$createResponse = Invoke-RestMethod -Uri http://localhost:5269/api/Messages -Method 'POST' -Body $body -ContentType 'application/json'
+$createResponse
+```
+
+- Delete ALL messages:
+
+```powershell
+$delResponse = Invoke-RestMethod -Uri http://localhost:5269/api/Messages -Method 'DELETE'
+$delResponse
+```
 
 ## KEDA Scaler based on Azure Service Bus messages
 
@@ -48,10 +134,10 @@ Now that we have the jobs triggered by Service Bus messages, let's scale based o
 $RESOURCE_GROUP=""
 $LOCATION=""
 $SUBSCRIPTION="$(az account show --query id --output tsv)"
-$USER_ASSIGNED_IDENTITY_NAME=""
+$USER_ASSIGNED_IDENTITY_NAME="uai-keda-asb"
 $FEDERATED_IDENTITY_CREDENTIAL_NAME="kedaFedIdentity" 
-$SERVICE_ACCOUNT_NAMESPACE=""
-$SERVICE_ACCOUNT_NAME=""
+$SERVICE_ACCOUNT_NAMESPACE="bases-jet"
+$SERVICE_ACCOUNT_NAME="keda-service-account"
 $AKS_CLUSTER_NAME=""
 $SERVICE_BUS_QUEUE_ID=""
 ```
@@ -66,12 +152,11 @@ Control with:
 - check KEDA runs: `kubectl get pods -n kube-system`
 - check KEDA version: `kubectl get crd/scaledobjects.keda.sh -o yaml`
 
-2. Enable Workload Identity and OIDC on AKS
+2. Enable Workload Identity and OIDC on AKS (if not done yet for the Listener)
 
 `az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer`
 
-- Store:
-  - the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
+> Store the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
 
 3. Create a Workload Identity that KEDA will use to query the Service Bus
 
@@ -85,13 +170,13 @@ Control with:
 
 `az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Receiver" --scope $SERVICE_BUS_QUEUE_ID`
 
-5. Create a Service Account for Keda in AKS
+5. Create a Service Account for KEDA in AKS
 
 `kubectl apply -f src/ListenerAPI/k8s/bases-jet-KEDA-sa.yaml`
 
 6. Create a Federated credential for the Workload Identity service account
 
-`az identity federated-credential create --name kedaFedIdentity --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:bases-jet:keda-service-account --audience api://AzureADTokenExchange`
+`az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:$SERVICE_ACCOUNT_NAME --audience api://AzureADTokenExchange`
 
 7. Create a Federated credential for the KEDA Operator service account
 

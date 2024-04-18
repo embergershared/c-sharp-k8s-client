@@ -11,14 +11,18 @@ namespace ListenerAPI.Models
     
     [DefaultValue(1)]
     public int MessagesToCreateCount { get; set; }
-    
-    public SbNsQueue SbNsQueue { get; set; }
-    
+
+    [Description("Optional Service Bus Namespace/Queue names")]
+    public SbNsQueue? SbNsQueue { get; set; }
+
+    [Description("Optional JobId")]
     public int? JobId { get; set; }
-    
+
+    [Description("Optional Parameter1")]
     [DefaultValue("Parameter1DefaultValue")]
     public string? Parameter1 { get; set; }
-    
+
+    [Description("Optional Parameter2")]
     [DefaultValue("Parameter2DefaultValue")]
     public string? Parameter2 { get; set; }
 

@@ -89,28 +89,28 @@ namespace ListenerAPI.Classes
               $" and nodeSelector: {(jobDefinition.Spec.Template.Spec.NodeSelector != null ? StringHelper.DictToString(jobDefinition.Spec.Template.Spec.NodeSelector) : "none")}" +
               ".";
 
-            _logger.LogInformation("Job created: {jobResult}", JsonSerializer.Serialize(jobCreationResult));
+            _logger.LogInformation("Kubernetes Job created: {jobResult}", JsonSerializer.Serialize(jobCreationResult));
           }
           else
           {
             var message = $"Job {jobDefinition.Metadata.Name} NOT created: an error happened: {httpResponse.Response.ReasonPhrase}";
             jobCreationResult.ResultMessage = message;
 
-            _logger.LogError("Job NOT created: an error happened: {message}", message);
+            _logger.LogError("Kubernetes Job NOT created: an error happened: {message}", message);
           }
         }
       }
       catch (HttpOperationException e) when (e.Response.StatusCode == System.Net.HttpStatusCode.Conflict)
       {
-        jobCreationResult.ResultMessage = $"Job {namespaceName}/{jobDefinition.Metadata.Name} already exists => NOT created.";
+        jobCreationResult.ResultMessage = $"Kubernetes Job {namespaceName}/{jobDefinition.Metadata.Name} already exists => NOT created.";
 
-        _logger.LogWarning("Job NOT created: Duplicate => Job {namespace}/{job} already exists", namespaceName, jobDefinition.Metadata.Name);
+        _logger.LogWarning("Kubernetes Job NOT created: Duplicate => Job {namespace}/{job} already exists", namespaceName, jobDefinition.Metadata.Name);
       }
       catch (Exception ex)
       {
         jobCreationResult.ResultMessage = $"Exception occurred: {ex.Message}";
 
-        _logger.LogError("Job NOT created: an exception was thrown: {ex}", ex.ToString());
+        _logger.LogError("Kubernetes Job NOT created: an exception was thrown: {ex}", ex.ToString());
       }
       return jobCreationResult;
     }

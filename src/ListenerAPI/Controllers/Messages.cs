@@ -37,6 +37,7 @@ namespace ListenerAPI.Controllers
     // GET api/messages
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ReceivedMessage>>> Get(int count = 1)
@@ -59,6 +60,10 @@ namespace ListenerAPI.Controllers
       // Check if all messages from all queues were successfully received
       if (!receivedResults.All(predicate: r => r.All(m => m.IsSuccessfullyReceived)))
         return StatusCode(StatusCodes.Status500InternalServerError, "Error Receiving messages");
+
+      // Check if we got any messages
+      if (receivedResults.Sum(r => r.Count) == 0)
+        return StatusCode(StatusCodes.Status204NoContent);
 
       // Generate the Http response
       foreach (var result in receivedResults)

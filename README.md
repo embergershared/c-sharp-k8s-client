@@ -56,15 +56,27 @@ To secure access to the Service Bus for the listener, we use the [`Workload Iden
 
 1. Enable Workload Identity and OIDC on AKS
 
-`az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer`
+```powershell
+az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer`
+```
 
-> Store the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
+> Store the OIDC issuer URL:
+
+```powershell
+$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
+```
 
 2. Create a Workload Identity that the Listener will use to access the Service Bus queue
 
-`az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION`
+```powershell
+az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION`
+```
 
-> Store the client ID: `$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"`
+> Store the client ID:
+
+```powershell
+$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"
+```
 
 3. Create the 2 role assignments for the Listener Workload Identity to access the Service Bus & Manage the queue
 
@@ -74,15 +86,21 @@ az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Reader" --
 az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Owner" --scope $SERVICE_BUS_QUEUE_ID
 ```
 
-4. Update the Helm chart `values.yaml` for `listener.serviceBus.listenerUaiClientId` with the `$USER_ASSIGNED_CLIENT_ID` value
+4. Update the Helm chart `values.yaml`
+
+Set the value for `listener.serviceBus.listenerUaiClientId` with the `$USER_ASSIGNED_CLIENT_ID`.
 
 5. Deploy the updated Helm chart, to create the service account and update the listener pod
 
-`helm upgrade listener ./helm-chart --namespace bases-jet --values ./helm-chart/values-secret.yaml`
+```powershell
+helm upgrade listener ./helm-chart --namespace bases-jet --values ./helm-chart/values-secret.yaml
+```
 
 6. Create a Federated credential for the Workload Identity service account
 
-`az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME} --audience api://AzureADTokenExchange`
+```powershell
+az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME} --audience api://AzureADTokenExchange
+```
 
 7. Test
 

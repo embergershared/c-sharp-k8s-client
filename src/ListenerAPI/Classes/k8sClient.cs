@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using k8s;
 using k8s.Autorest;
@@ -15,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ListenerAPI.Classes
 {
-  public class K8SClient : IK8SClient
+  public partial class K8SClient : IK8SClient
   {
     private readonly ILogger<K8SClient> _logger;
     private Kubernetes? _k8SClient;
@@ -69,7 +70,16 @@ namespace ListenerAPI.Classes
     public async Task<JobCreationResult> CreateJobAsync(string jobName, string? namespaceName = "default")
     {
       var jobCreationResult = new JobCreationResult();
-      var jobDefinition = CreateJobDefinition(jobName);
+      var name = CreateJobName(jobName);
+      
+      if (string.IsNullOrEmpty(name))
+      {
+        jobCreationResult.ResultMessage = $"Kubernetes Job NOT created: the jobName value: {jobName} is invalid.";
+        _logger.LogError("Kubernetes Job NOT created: the jobName value: {jobName} is invalid", jobName);
+        return jobCreationResult;
+      }
+
+      var jobDefinition = CreateJobDefinition(name);
 
       try
       {
@@ -141,6 +151,49 @@ namespace ListenerAPI.Classes
       }
     }
 
+    [GeneratedRegex(@"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$")]
+    private static partial Regex K8SJobNameValidation();
+
+    private static bool IsValidJobName(string input)
+    {
+      //const string pattern = @"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$";
+      // Pattern for a lowercase hostname (RFC 1123 compliant)  
+      //var rfc1123 = @"^[a-z]([a-z0-9-]*[a-z0-9])?(?:\.[a-z]([a-z0-9-]*[a-z0-9])?)*$";
+
+      var regex = K8SJobNameValidation();
+
+      return regex.IsMatch(input);
+    }
+
+    private string CreateJobName(string jobName)
+    {
+      var value = string.Empty;
+
+      var askedName = $"{_config.GetValue<string>(ConfigKey.JobsPrefix)}-{jobName}".ToLower();
+      if (IsValidJobName(askedName))
+      {
+        value = askedName;
+        _logger.LogInformation("K8SClient.CreateJobName(): The job asked name: {askedName} is valid.", askedName);
+      }
+      else
+      {
+        _logger.LogWarning("K8SClient.CreateJobName(): The job asked name: {askedName} is invalid.", askedName);
+
+        var degradedName = $"{jobName}".ToLower();
+        if (IsValidJobName(degradedName))
+        {
+          value = degradedName;
+          _logger.LogInformation("K8SClient.CreateJobName(): The job degraded name: {degradedName} is valid.", degradedName);
+        }
+        else
+        {
+          _logger.LogError("K8SClient.CreateJobName(): The job degraded name: {degradedName} is invalid.", degradedName);
+        }
+      }
+
+      return value;
+    }
+
     private V1Job CreateJobDefinition(string jobName)
     {
       var job = new V1Job()
@@ -149,7 +202,7 @@ namespace ListenerAPI.Classes
         Kind = "Job",
         Metadata = new V1ObjectMeta()
         {
-            Name = $"{_config.GetValue<string>(ConfigKey.JobsPrefix)}-{jobName}"
+            Name = jobName
         },
         Spec = new V1JobSpec()
         {

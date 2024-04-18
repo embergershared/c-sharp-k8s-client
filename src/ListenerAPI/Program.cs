@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using ListenerAPI.Models;
 
 namespace ListenerAPI
 {
@@ -70,8 +71,16 @@ namespace ListenerAPI
 
       // ###  Azure Clients to use Service Bus(es)  ###
       var sbNamespaces = AppGlobal.GetServiceBusNames(builder.Configuration);
+      
+      // Set a global variable to indicate if Service Bus is used
       AppGlobal.Data["IsUsingServiceBus"] = (sbNamespaces.Count != 0).ToString();
+      // Set Default Service Bus Namespace and Queue Name
+      var nsQueue = new SbNsQueue(builder.Configuration, ConfigKey.SbNsQueueName);
+      if (nsQueue.SbNamespace != null) AppGlobal.Data["DefaultSbNamespace"] = nsQueue.SbNamespace;
+      if (nsQueue.QueueName != null) AppGlobal.Data["DefaultQueueName"] = nsQueue.QueueName;
+
       EnforceTls12();
+      
       builder.Services.AddAzureClients(clientBuilder =>
       {
         clientBuilder.UseCredential(AzureCreds.GetCred(builder.Configuration[ConfigKey.AzureIdentityPreferredAuthProfile]));

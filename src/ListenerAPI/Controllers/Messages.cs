@@ -102,30 +102,23 @@ namespace ListenerAPI.Controllers
       if (!bool.Parse(AppGlobal.Data["IsUsingServiceBus"]))
         return NotFound("Error: No ServiceBus(es) set in configuration to SEND messages TO");
 
-      // Creating aysnc Tasks List to send the message(s)
+      // Creating List of async Tasks to send the message(s) to the queue(s)
       var sendMessagesTasks = new List<Task<int>>();
 
-      if (!jobRequest.SbNsQueue.IsValid())
-      {
-        foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
-        {
-          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(jobRequest.MessagesToCreateCount, sbNamespace!, sendMessagesTasks);
-        }
-      }
-      else
+      if (jobRequest.SbNsQueue != null && jobRequest.SbNsQueue.IsValid())
       {
         {
-          //_sbMessages.AddSendMessagesTo1Ns1QueueTask(
-          //  jobRequest.SbNsQueue.SbNamespace!,
-          //  jobRequest.SbNsQueue.QueueName!,
-          //  jobRequest.MessagesToCreateCount,
-          //  sendMessagesTasks
-          //  );
           _sbMessages.AddSendMessagesTo1Ns1QueueTask(
             jobRequest,
             sendMessagesTasks
           );
-
+        }
+      }
+      else
+      {
+        foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
+        {
+          await _sbMessages.AddSendMessagesTo1NsAllQueuesTasksAsync(jobRequest, sbNamespace!, sendMessagesTasks);
         }
       }
 
@@ -161,6 +154,7 @@ namespace ListenerAPI.Controllers
 
         if (string.IsNullOrEmpty(nsQueueName))
         {
+          // If no parameter is provided, we delete all messages from all queues in all Service Bus namespaces
           foreach (var sbNamespace in AppGlobal.GetServiceBusNames(_config))
           {
             await _sbMessages.AddDeleteAllMessagesFrom1NsAllQueuesTasksAsync(sbNamespace!, deleteAllMessagesTasks);
@@ -168,12 +162,13 @@ namespace ListenerAPI.Controllers
         }
         else
         {
+          // If a parameter is provided, we delete all messages from the specified queue
           var sbNsQueue = new SbNsQueue(nsQueueName);
-          if (sbNsQueue.SbNamespace != null && sbNsQueue.QueueName != null)
+          if (sbNsQueue.IsValid())
           {
             _sbMessages.AddDeleteAllMessagesFrom1Ns1QueueTask(
-              sbNsQueue.SbNamespace,
-              sbNsQueue.QueueName,
+              sbNsQueue.SbNamespace!,
+              sbNsQueue.QueueName!,
               deleteAllMessagesTasks
             );
           }

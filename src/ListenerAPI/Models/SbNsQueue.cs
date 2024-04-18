@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ListenerAPI.Helpers;
+using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
 
 namespace ListenerAPI.Models
@@ -8,17 +9,20 @@ namespace ListenerAPI.Models
     private const string SplitCharacter = "/";
 
     // Public Properties
-    [DefaultValue("sb-use2-446692-s4-aksafdpls-01")]
+    [Description("Optional Service Bus Namespace name")]
+    [DefaultValue("Optional")]
     public string? SbNamespace { get; set; }
 
-    [DefaultValue("jobrequests")]
+    [Description("Optional Service Bus Queue name")]
+    [DefaultValue("Optional")]
     public string? QueueName { get; set; }
 
     // Constructors
     public SbNsQueue()
     {
+      //SbNamespace= AppGlobal.Data["DefaultSbNamespace"];
+      //QueueName = AppGlobal.Data["DefaultQueueName"];
     }
-    
     public SbNsQueue(IConfiguration config, string configKey)
     {
       var configValue = config[configKey];

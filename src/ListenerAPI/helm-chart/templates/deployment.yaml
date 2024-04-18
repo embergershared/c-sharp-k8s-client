@@ -12,7 +12,9 @@ spec:
     metadata:
       labels:
         app: {{ include "listener.fullname" . }}-listener
+        azure.workload.identity/use: "true"
     spec:
+      serviceAccountName: listener-service-account
       nodeSelector:
         "{{ .Values.listener.nodeSelector.key }}": {{ .Values.listener.nodeSelector.value }}
       containers:

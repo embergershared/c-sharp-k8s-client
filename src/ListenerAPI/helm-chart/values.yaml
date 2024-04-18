@@ -30,6 +30,7 @@ listener:
   #   namespace:
   #   queue:
   #   startMessageProcessor:
+  #   listenerUaiClientId:
   #   kedaUaiClientId:
 
 jobs:

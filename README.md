@@ -135,7 +135,7 @@ $RESOURCE_GROUP=""
 $LOCATION=""
 $SUBSCRIPTION="$(az account show --query id --output tsv)"
 $USER_ASSIGNED_IDENTITY_NAME="uai-keda-asb"
-$FEDERATED_IDENTITY_CREDENTIAL_NAME="kedaFedIdentity" 
+$FEDERATED_IDENTITY_CREDENTIAL_NAME="KedaServiceBusK8sSaFedCred"
 $SERVICE_ACCOUNT_NAMESPACE="bases-jet"
 $SERVICE_ACCOUNT_NAME="keda-service-account"
 $AKS_CLUSTER_NAME=""
@@ -235,3 +235,11 @@ Description | Link
  KEDA sample with AKS Workload Identity | [.NET Core worker processing Azure Service Bus Queue scaled by KEDA with Azure AD Workload Identity](https://github.com/kedacore/sample-dotnet-worker-servicebus-queue/blob/main/workload-identity.md)
  AKS Autoscaler profile | [Use the cluster autoscaler in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler?tabs=azure-cli#use-the-cluster-autoscaler-profile)
  AKS Workload Identity with an app | [Use a workload identity with an application on Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/learn/tutorial-kubernetes-workload-identity)
+
+## Extras
+
+- To list all Federated Credentials attached to a Managed Identity:
+
+```powershell
+az identity federated-credential list -g $RESOURCE_GROUP --identity-name $USER_ASSIGNED_IDENTITY_NAME
+```

@@ -13,7 +13,8 @@ repository:
 
 listener:
   replicaCount: 1
-  k8sServiceAccountName: listenerapi-sa
+  listenerK8sServiceAccountName: listenerapi-sa
+  # Requires Federation: az identity federated-credential create --name ListenerApiK8sSaFedCred --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:<listenerK8sServiceAccountName> --audience api://AzureADTokenExchange
   image:
     name: bases-jet/listenerapi
     tag: dev
@@ -39,7 +40,8 @@ listener:
     useKedaAutoScaler: false
     kedaUaiClientId:
     kedaTriggerAuthName: azure-servicebus-trigauth
-    kedaServiceAccountName: keda-sa
+    kedaK8sServiceAccountName: keda-sa
+    # Requires Federation: az identity federated-credential create --name KedaServiceBusK8sSaFedCred --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:<kedaK8sServiceAccountName> --audience api://AzureADTokenExchange
 
 jobs:
   image:

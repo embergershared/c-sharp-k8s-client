@@ -34,5 +34,5 @@ spec:
       messageCount: "2" # default 5
       cloud: AzurePublicCloud # Optional. Default: AzurePublicCloud
     authenticationRef:
-        name: azure-servicebus-auth # authenticationRef would need either podIdentity or define a connection parameter
+        name: {{ .Values.listener.serviceBus.kedaTriggerAuthName }} # authenticationRef would need either podIdentity or define a connection parameter
 {{ end }}

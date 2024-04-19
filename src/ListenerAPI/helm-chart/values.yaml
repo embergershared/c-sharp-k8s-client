@@ -2,14 +2,19 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 # The values commented are set with non git checked-in value file. They are required.
+
 # Chart deployment is done with the following command:
 # `helm install listener ./helm-chart --namespace bases-jet --create-namespace --values ./helm-chart/values-secret.yaml`
 
-#  repository:
+# Chart upgrade is done with the following command:
+# `helm upgrade listener ./helm-chart --values ./helm-chart/values-secret.yaml`
+
+repository:
 
 listener:
   replicaCount: 1
-  k8sServiceAccountName: listener-service-account
+  listenerK8sServiceAccountName: listenerapi-sa
+  # Requires Federation: az identity federated-credential create --name ListenerApiK8sSaFedCred --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:<listenerK8sServiceAccountName> --audience api://AzureADTokenExchange
   image:
     name: bases-jet/listenerapi
     tag: dev
@@ -23,16 +28,20 @@ listener:
     type: LoadBalancer
     port: 80
     targetPort: 8080
-  # azureFile:
-  #   storageAccountName:
-  #   storageAccountKey:
-  #   shareName:
-  # serviceBus:
-  #   namespace:
-  #   queue:
-  #   startMessageProcessor:
-  #   listenerUaiClientId:
-  #   kedaUaiClientId:
+  azureFile:
+    storageAccountName:
+    storageAccountKey:
+    shareName:
+  serviceBus:
+    namespace:
+    queue:
+    useMessageProcessor: false
+    listenerUaiClientId:
+    useKedaAutoScaler: false
+    kedaUaiClientId:
+    kedaTriggerAuthName: azure-servicebus-trigauth
+    kedaK8sServiceAccountName: keda-sa
+    # Requires Federation: az identity federated-credential create --name KedaServiceBusK8sSaFedCred --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:<kedaK8sServiceAccountName> --audience api://AzureADTokenExchange
 
 jobs:
   image:

@@ -1,9 +1,11 @@
+{{ if .Values.listener.serviceBus.useKedaAutoScaler }}
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: azure-servicebus-auth
+  name: {{ .Values.listener.serviceBus.kedaTriggerAuthName }}
   namespace: {{ .Release.Namespace }}
 spec:
   podIdentity:
     provider: azure-workload # azure | azure-workload
     identityId: {{ .Values.listener.serviceBus.kedaUaiClientId }}
+{{ end }}

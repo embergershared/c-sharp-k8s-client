@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   AzSbNsQueueName: {{ .Values.listener.serviceBus.namespace }}/{{ .Values.listener.serviceBus.queue }}
-  StartMessagesProcessor: "{{ .Values.listener.serviceBus.startMessageProcessor }}"
+  StartMessagesProcessor: "{{ .Values.listener.serviceBus.useMessageProcessor }}"
   JobsNamespace: "bases-jet"
   JobsPrefix: "azure-dev"
   JobsRepository: {{ .Values.repository }}

@@ -78,7 +78,7 @@ az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURC
 $USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"
 ```
 
-3. Create 2 role assignments for the ListenerAPI's User-assigned Identity to access the Service Bus & Manage the queue
+3. Create 2 role assignments for the `ListenerAPI`'s User-assigned Identity allowing it to access the Service Bus & Manage the Queue
 
 ```powershell
 $SERVICE_BUS_ID = $SERVICE_BUS_QUEUE_ID -split '/queues', 2 | Select-Object -First 1
@@ -128,7 +128,7 @@ We can also scale based on the amount of messages present in the Queue.
 
 ### Setup
 
-0. Set few variables values
+1. Set few variables values
 
 ```powershell
 $RESOURCE_GROUP=""
@@ -142,7 +142,7 @@ $AKS_CLUSTER_NAME=""
 $SERVICE_BUS_QUEUE_ID=""
 ```
 
-1. Enable KEDA add-on
+2. Enable `KEDA` add-on
 
 ```powershell
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-keda
@@ -159,7 +159,7 @@ kubectl get pods -n kube-system
 kubectl get crd/scaledobjects.keda.sh -o yaml
 ```
 
-2. Enable Workload Identity and OIDC on AKS **(if not done yet for the `ListenerAPI`)**
+3. Enable Workload Identity and OIDC on AKS **(if not done yet for the `ListenerAPI`)**
 
 ```powershell
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer
@@ -167,7 +167,7 @@ az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity
 
 > Store the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
 
-3. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This identity will be used by KEDA to query the Service Bus
+4. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This identity will be used by KEDA to query the Service Bus
 
 ```powershell
 az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION
@@ -177,53 +177,53 @@ az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURC
   - the client ID: `$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"`
   - the tenant ID: `$TENANT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'tenantId' -otsv)"`
 
-4. Create a role assignment for the KEDA's User-assigned Identity to read the Service Bus queue
+5. Create a role assignment for the KEDA's User-assigned Identity to read the Service Bus queue
 
 ```powershell
 az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Receiver" --scope $SERVICE_BUS_QUEUE_ID
 ```
 
-5. Create a Kubernetes Service Account for KEDA in AKS
+6. Create a Kubernetes Service Account for KEDA in AKS
 
 ```powershell
 kubectl apply -f src/ListenerAPI/k8s/bases-jet-KEDA-sa.yaml
 ```
 
-6. Create a Federated credential to link the `KEDA` Kubernetes service account with the Azure User-assigned Identity
+7. Create a Federated credential to link the `KEDA` Kubernetes service account with the Azure User-assigned Identity
 
 ```powershell
 az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:$SERVICE_ACCOUNT_NAME --audience api://AzureADTokenExchange
 ```
 
-7. Create a Federated credential to link the `KEDA Operator` Kubernetes service account with the Azure User-assigned Identity
+8. Create a Federated credential to link the `KEDA Operator` Kubernetes service account with the Azure User-assigned Identity
 
 ```powershell
 az identity federated-credential create --name kedaOperatorFedIdentity --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:"kube-system":"keda-operator" --audience api://AzureADTokenExchange
 ```
 
-8. Restart KEDA
+9. Restart KEDA
 
 ```powershell
 kubectl rollout restart deployment keda-operator -n kube-system
 ```
 
-9. Create a scaler on the Service Bus queue
+10. Create a scaler on the Service Bus queue
 
 ```powershell
 kubectl apply -f src/ListenerAPI/k8s/bases-jet-KEDA-asb.yaml
 ```
 
-10. Check the scaler is `READY`
+11. Check the scaler is `READY`
 
 ```powershell
 kubectl get ScaledObject
 ```
 
-11. Create Messages in the Service Bus Queue
+12. Create Messages in the Service Bus Queue
 
 - Observe the scaling of the `ListenerAPI` Deployment's pods and the user node pool.
 
-12. Tune AKS Cluster Autoscaler profile (aggressive scale down profile inspired example)
+13. Tune AKS Cluster Autoscaler profile (aggressive scale down profile inspired example)
 
 ```powershell
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile scan-interval=15s

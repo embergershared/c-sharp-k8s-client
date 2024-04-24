@@ -52,9 +52,9 @@ $AKS_CLUSTER_NAME=""
 $SERVICE_BUS_QUEUE_ID=""
 ```
 
-To secure access to the Service Bus for the listener, we use the [`Workload Identity feature`](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) that the listener pod will use to access the Service Bus queue, following this setup (inspired by this tutorial [Use a workload identity with an application on Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/learn/tutorial-kubernetes-workload-identity)):
+For the `ListenerAPI` to securely access the Service Bus, we use the [`Workload Identity feature`](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster). The following setup instructions are inspired by this tutorial: [Use a workload identity with an application on Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/learn/tutorial-kubernetes-workload-identity). Here are the steps to follow:
 
-1. Enable Workload Identity and OIDC on AKS
+1. Enable `Workload Identity` and `OIDC` on AKS
 
 ```powershell
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer
@@ -62,9 +62,9 @@ az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity
 
 > Store the OIDC issuer URL:
 
-```powershell
-$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
-```
+    ```powershell
+    $AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
+    ```
 
 2. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This is the Azure Identity the `ListenerAPI` will use to access the Service Bus Queue
 

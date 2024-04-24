@@ -61,10 +61,10 @@ az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity
 ```
 
 > Store the OIDC issuer URL:
-
-    ```powershell
-    $AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
-    ```
+>
+>```powershell
+$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
+>```
 
 2. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This is the Azure Identity the `ListenerAPI` will use to access the Service Bus Queue
 

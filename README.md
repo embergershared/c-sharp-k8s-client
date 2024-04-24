@@ -66,37 +66,37 @@ az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity
 $AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"
 ```
 
-2. Create a Workload Identity that the Listener will use to access the Service Bus queue
+2. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This is the Azure Identity the `ListenerAPI` will use to access the Service Bus Queue
 
 ```powershell
 az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION`
 ```
 
-> Store the client ID:
+> Store the User-assigned Identity client ID:
 
 ```powershell
 $USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"
 ```
 
-3. Create the 2 role assignments for the Listener Workload Identity to access the Service Bus & Manage the queue
+3. Create 2 role assignments for the ListenerAPI's User-assigned Identity to access the Service Bus & Manage the queue
 
 ```powershell
 $SERVICE_BUS_ID = $SERVICE_BUS_QUEUE_ID -split '/queues', 2 | Select-Object -First 1
-az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Reader" --scope $SERVICE_BUS_ID
-az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Owner" --scope $SERVICE_BUS_QUEUE_ID
+az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Reader" --scope $SERVICE_BUS_ID # Allows the ListenerAPI to access the Service Bus
+az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Owner" --scope $SERVICE_BUS_QUEUE_ID # Allows the ListenerAPI to create and receive messages in this queue
 ```
 
 4. Update the Helm chart `values.yaml`
 
 Set the value for `listener.serviceBus.listenerUaiClientId` with the `$USER_ASSIGNED_CLIENT_ID`.
 
-5. Deploy the updated Helm chart, to create the service account and update the listener pod
+5. Deploy the updated Helm chart, to create the service account and update the `ListenerAPI` pod
 
 ```powershell
 helm upgrade listener ./helm-chart --namespace $SERVICE_ACCOUNT_NAMESPACE --values ./helm-chart/values-secret.yaml
 ```
 
-6. Create a Federated credential for the Workload Identity service account
+6. Create a Federated credential to link the `ListenerAPI` Kubernetes service account with the Azure User-assigned Identity
 
 ```powershell
 az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME} --audience api://AzureADTokenExchange
@@ -124,7 +124,7 @@ $delResponse
 
 ## KEDA Scaler based on Azure Service Bus messages
 
-Now that we have the jobs triggered by Service Bus messages, let's scale based on them.
+We can also scale based on the amount of messages present in the Queue.
 
 ### Setup
 
@@ -158,7 +158,7 @@ Control with:
 
 > Store the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
 
-3. Create a Workload Identity that KEDA will use to query the Service Bus
+3. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This identity will be used by KEDA to query the Service Bus
 
 `az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION --subscription $SUBSCRIPTION`
 
@@ -166,19 +166,19 @@ Control with:
   - the client ID: `$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"`
   - the tenant ID: `$TENANT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'tenantId' -otsv)"`
 
-4. Create a role assignment for the KEDA workload identity to read the Service Bus queue
+4. Create a role assignment for the KEDA's User-assigned Identity to read the Service Bus queue
 
 `az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Receiver" --scope $SERVICE_BUS_QUEUE_ID`
 
-5. Create a Service Account for KEDA in AKS
+5. Create a Kubernetes Service Account for KEDA in AKS
 
 `kubectl apply -f src/ListenerAPI/k8s/bases-jet-KEDA-sa.yaml`
 
-6. Create a Federated credential for the Workload Identity service account
+6. Create a Federated credential to link the `KEDA` Kubernetes service account with the Azure User-assigned Identity
 
 `az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NAME --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:$SERVICE_ACCOUNT_NAMESPACE:$SERVICE_ACCOUNT_NAME --audience api://AzureADTokenExchange`
 
-7. Create a Federated credential for the KEDA Operator service account
+7. Create a Federated credential to link the `KEDA Operator` Kubernetes service account with the Azure User-assigned Identity
 
 `az identity federated-credential create --name kedaOperatorFedIdentity --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:"kube-system":"keda-operator" --audience api://AzureADTokenExchange`
 
@@ -196,9 +196,9 @@ Control with:
 
 11. Create Messages in the Service Bus Queue
 
-- Observe the Deployment pods and the user node pool scaling.
+- Observe the scaling of the `ListenerAPI` Deployment's pods and the user node pool.
 
-12. Tune ASK Cluster autoscaler profile (aggressive scale down profile inspired example)
+12. Tune AKS Cluster Autoscaler profile (aggressive scale down profile inspired example)
 
 ```
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --cluster-autoscaler-profile scan-interval=15s

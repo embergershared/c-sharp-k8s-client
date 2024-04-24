@@ -177,13 +177,13 @@ az identity create --name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURC
   - the client ID: `$USER_ASSIGNED_CLIENT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'clientId' -otsv)"`
   - the tenant ID: `$TENANT_ID="$(az identity show -g $RESOURCE_GROUP -n $USER_ASSIGNED_IDENTITY_NAME --query 'tenantId' -otsv)"`
 
-5. Create a role assignment for the KEDA's User-assigned Identity to read the Service Bus queue
+5. Create a role assignment for the `KEDA`'s User-assigned Identity to read the Service Bus queue
 
 ```powershell
 az role assignment create --assignee $USER_ASSIGNED_CLIENT_ID --role "Azure Service Bus Data Receiver" --scope $SERVICE_BUS_QUEUE_ID
 ```
 
-6. Create a Kubernetes Service Account for KEDA in AKS
+6. Create a Kubernetes Service Account for `KEDA` in AKS
 
 ```powershell
 kubectl apply -f src/ListenerAPI/k8s/bases-jet-KEDA-sa.yaml
@@ -201,7 +201,7 @@ az identity federated-credential create --name $FEDERATED_IDENTITY_CREDENTIAL_NA
 az identity federated-credential create --name kedaOperatorFedIdentity --identity-name $USER_ASSIGNED_IDENTITY_NAME --resource-group $RESOURCE_GROUP --issuer $AKS_OIDC_ISSUER --subject system:serviceaccount:"kube-system":"keda-operator" --audience api://AzureADTokenExchange
 ```
 
-9. Restart KEDA
+9. Restart `KEDA`
 
 ```powershell
 kubectl rollout restart deployment keda-operator -n kube-system

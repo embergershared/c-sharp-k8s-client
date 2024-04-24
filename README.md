@@ -159,7 +159,7 @@ kubectl get pods -n kube-system
 kubectl get crd/scaledobjects.keda.sh -o yaml
 ```
 
-2. Enable Workload Identity and OIDC on AKS (if not done yet for the Listener)
+2. Enable Workload Identity and OIDC on AKS **(if not done yet for the `ListenerAPI`)**
 
 ```powershell
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer

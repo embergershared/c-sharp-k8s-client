@@ -165,7 +165,8 @@ kubectl get crd/scaledobjects.keda.sh -o yaml
 az aks update -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --enable-workload-identity --enable-oidc-issuer
 ```
 
-> Store the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
+- Store:
+  - the OIDC issuer URL: `$AKS_OIDC_ISSUER="$(az aks show -n $AKS_CLUSTER_NAME -g $RESOURCE_GROUP --query "oidcIssuerProfile.issuerUrl" -otsv)"`
 
 4. Create a [`Managed Identity`](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview#managed-identity-types) of type `User-assigned`. This identity will be used by KEDA to query the Service Bus
 
